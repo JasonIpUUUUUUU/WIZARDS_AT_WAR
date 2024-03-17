@@ -2,21 +2,15 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Manager : MonoBehaviour
+public class edges : MonoBehaviour
 {
     [SerializeField]
-    private int[] neighbourCount, neigbours;
-
-    [SerializeField]
-    private GameObject[] nodes;
-
-    [SerializeField]
-    private GameObject edges, node;
+    private int distance;
 
     // Start is called before the first frame update
     void Start()
     {
-        spawnNodes();
+        
     }
 
     // Update is called once per frame
@@ -25,8 +19,8 @@ public class Manager : MonoBehaviour
         
     }
 
-    void spawnNodes()
+    public void setDistance(int distanceP)
     {
-
+        distance = distanceP;
     }
 }
