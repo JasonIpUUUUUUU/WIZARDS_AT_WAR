@@ -28,10 +28,7 @@ public class MovingCam : MonoBehaviour
 
     public void addPosition(Vector3 position)
     {
-        if(Input.GetAxis("Horizontal") != 0 || Input.GetAxis("Vertical") != 0)
-        {
-            canMove = false;
-        }
+        canMove = checkInputs();
         movePositions.Add(position);
         forcedMoving = true;
     }
@@ -55,6 +52,11 @@ public class MovingCam : MonoBehaviour
         }
     }
 
+    bool checkInputs()
+    {
+        return Input.GetAxis("Horizontal") == 0 && Input.GetAxis("Vertical") == 0;
+    }
+
     void interruptMove()
     {
         forcedMoving = false;
@@ -66,6 +68,14 @@ public class MovingCam : MonoBehaviour
         if (canMove)
         {
             transform.position += new Vector3(Input.GetAxis("Horizontal") * moveSpeed * Time.deltaTime, Input.GetAxis("Vertical") * moveSpeed * Time.deltaTime);
+            if (!checkInputs())
+            {
+                interruptMove();
+            }
+        }
+        else if(checkInputs())
+        {
+            canMove = true;
         }
     }
 
