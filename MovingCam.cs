@@ -26,6 +26,7 @@ public class MovingCam : MonoBehaviour
         forcedMove();
     }
 
+    //it adds a position into the queue of positions for the camera to move to
     public void addPosition(Vector3 position)
     {
         canMove = checkInputs();
@@ -33,6 +34,7 @@ public class MovingCam : MonoBehaviour
         forcedMoving = true;
     }
 
+    //this forces the camera to gradually move towards the positions within the movePositions queue
     void forcedMove()
     {
         if (forcedMoving)
@@ -52,17 +54,20 @@ public class MovingCam : MonoBehaviour
         }
     }
 
+    //it returns true if any directional key is pressed
     bool checkInputs()
     {
         return Input.GetAxis("Horizontal") == 0 && Input.GetAxis("Vertical") == 0;
     }
 
+    //it stops the forcedmove from happening
     void interruptMove()
     {
         forcedMoving = false;
         movePositions.Clear();
     }
 
+    //it respons to player inputs to move the camera
     void cameraMove()
     {
         if (canMove)
@@ -79,6 +84,7 @@ public class MovingCam : MonoBehaviour
         }
     }
 
+    //this manages zooming in and out for the player
     void cameraScroll()
     {
         float oldOrthographicSize = Camera.main.orthographicSize;

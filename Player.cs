@@ -4,6 +4,7 @@ using UnityEngine;
 
 public class Player : MonoBehaviour
 {
+    //this script with be local to each player
     private bool showing;
 
     [SerializeField]
@@ -20,6 +21,7 @@ public class Player : MonoBehaviour
         cam = GameObject.FindGameObjectWithTag("CAMHOLDER").GetComponent<MovingCam>();
     }
 
+    //this is to show the UI on node properties for one player
     public void showUI()
     {
         if (showing)
@@ -32,13 +34,15 @@ public class Player : MonoBehaviour
         current_UI.LeanMoveLocalY(-Screen.height * 0.35f, 1).setEaseOutExpo();
     }
 
+    //this is to hide the UI
     public void hideUI()
     {
         showing = false;
-        current_UI.LeanMoveLocalY(-Screen.height * 2, 1f).setEaseInExpo();
+        current_UI.LeanMoveLocalY(-Screen.height * 2, 0.5f);
         Destroy(current_UI, 2);
     }
 
+    //this is run when the background is clicked
     public void emptySpace()
     {
         if (showing)
@@ -48,6 +52,7 @@ public class Player : MonoBehaviour
         node = null;
     }
 
+    //this is run when a node is clicked
     public void onNodeClicked(GameObject nodeArg)
     {
         showUI();

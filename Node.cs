@@ -47,6 +47,7 @@ public class Node : MonoBehaviour
         }
     }
 
+    //this is an infinite loop where the manpower on the node increments every second
     IEnumerator productionCoroutine()
     {
         producing = true;
@@ -55,6 +56,7 @@ public class Node : MonoBehaviour
         StartCoroutine(productionCoroutine());
     }
 
+    //this is to reset the node back to default
     public void resetNode()
     {
         productionNode = false;
@@ -66,6 +68,7 @@ public class Node : MonoBehaviour
         }
     }
 
+    //this is to chance the state of the node
     public void changeState(string changeThing)
     {
         switch (changeThing)
@@ -98,6 +101,7 @@ public class Node : MonoBehaviour
         }
     }
 
+    //this is to increase or decrease manpower on the node
     public void modifyManPower(int amount, bool add)
     {
         if (add)
@@ -111,6 +115,7 @@ public class Node : MonoBehaviour
         manPowerText.text = manPower.ToString();
     }
 
+    //this manages what counts as a neighbour to this node
     public void addNeighbour(GameObject neighbour, GameObject edge, bool addMore)
     {
         paths.Add(edge);
@@ -121,6 +126,7 @@ public class Node : MonoBehaviour
         }
     }
 
+    //this returns true if the target gameobject is a neighbour
     public bool findNeighbour(GameObject target)
     {
         return neighbours.Contains(target);
