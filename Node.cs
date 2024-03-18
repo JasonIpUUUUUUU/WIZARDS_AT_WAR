@@ -18,9 +18,9 @@ public class Node : MonoBehaviour
 
     private TextMeshProUGUI manPowerText;
 
-    private MovingCam movingCam;
-
     private Manager manager;
+
+    private Player player;
 
     //lists have to be kept public to be modified
     public List<GameObject> neighbours, paths;
@@ -32,7 +32,7 @@ public class Node : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        movingCam = GameObject.FindGameObjectWithTag("CAMHOLDER").GetComponent<MovingCam>();
+        player = GameObject.FindGameObjectWithTag("PLAYER").GetComponent<Player>();
         manager = GameObject.FindGameObjectWithTag("MANAGER").GetComponent<Manager>();
         renderer = GetComponent<SpriteRenderer>();
         manPowerText = GetComponentInChildren<TextMeshProUGUI>();
@@ -121,10 +121,15 @@ public class Node : MonoBehaviour
         }
     }
 
+    public bool findNeighbour(GameObject target)
+    {
+        return neighbours.Contains(target);
+    }
+
     //a built in unity function which runs when the object is clicked
     private void OnMouseDown()
     {
-        movingCam.addPosition(transform.position);
+        player.onNodeClicked(gameObject);
         //transform.localScale *= 0.9f;
         clickSprite.SetActive(true);
     }
