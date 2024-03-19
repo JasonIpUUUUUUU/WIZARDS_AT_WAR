@@ -8,7 +8,7 @@ public class MovingCam : MonoBehaviour
     private bool forcedMoving, canMove;
 
     [SerializeField]
-    private float Ylimits, maxSize, minSize, moveSpeed;
+    private float Ylimits, maxSize, minSize, moveSpeed, dragSpeed;
 
     public List<Vector3> movePositions;
 
@@ -96,5 +96,11 @@ public class MovingCam : MonoBehaviour
             //this ensures when it detects the camera zooming in, it moves the camera towards the mouse and the opposite as well
             transform.position = mousePosition + (transform.position - mousePosition) * (Camera.main.orthographicSize / oldOrthographicSize);
         }
+    }
+
+    public void dragMove(Vector3 initialMousePos, Vector3 currentMousePos, Vector3 offset)
+    {
+        transform.position = offset - (currentMousePos - initialMousePos) * dragSpeed;
+        transform.position = new Vector3(transform.position.x, transform.position.y, 0);
     }
 }
