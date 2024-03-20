@@ -24,14 +24,6 @@ public class Player : MonoBehaviour
         cam = GameObject.FindGameObjectWithTag("CAMHOLDER").GetComponent<MovingCam>();
     }
 
-    private void Update()
-    {
-        if (showing)
-        {
-
-        }
-    }
-
     //this is to show the UI on node properties for one player
     public IEnumerator showUI()
     {
