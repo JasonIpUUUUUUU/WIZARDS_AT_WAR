@@ -6,25 +6,27 @@ using UnityEngine.UI;
 
 public class NodeInfoUI : MonoBehaviour
 {
+    private bool hasNode;
     private Node node;
 
+    private int manpower, sendAmount, upgradeCost, productionLevel, potionLevel;
+
     [SerializeField]
-
-
-    // Start is called before the first frame update
-    void Start()
-    {
-        
-    }
+    TextMeshProUGUI manPowerText, potionLevelText, productionLevelText, sendText1, sendText2, nodeType, upgradeText;
 
     // Update is called once per frame
     void Update()
     {
-        
+        if (hasNode)
+        {
+            manpower = node.returnManpower();
+            manPowerText.text = manpower.ToString();
+        }
     }
 
     public void instantiateValues(Node nodeArg)
     {
         node = nodeArg;
+        hasNode = true;
     }
 }

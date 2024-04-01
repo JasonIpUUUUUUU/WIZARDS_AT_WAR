@@ -37,6 +37,7 @@ public class Player : MonoBehaviour
             showing = true;
             current_UI = Instantiate(UI_Prefab, UI_Canvas.transform);
             current_UI.transform.localPosition = new Vector3(0, -Screen.height * 1.5f);
+            current_UI.GetComponent<NodeInfoUI>().instantiateValues(node.GetComponent<Node>());
             LeanTween.cancelAll();
             current_UI.LeanMoveLocalY(-Screen.height * 0.35f, 1).setEaseOutExpo();
             yield return new WaitForSeconds(0.5f);
@@ -51,19 +52,26 @@ public class Player : MonoBehaviour
         current_UI.LeanMoveLocalY(-Screen.height * 2, 0.25f);
         yield return new WaitForSeconds(0.25f);
         hiding = false;
-        showing = false;
-        node = null;
+        if (showing)
+        {
+            showing = false;
+        }
+        else
+        {
+            node = null;
+        }
         Destroy(current_UI, 0.5f);
     }
 
     //this is run when the background is clicked
     public void emptySpace()
     {
+        node = null;
         if (showing)
         {
+            showing = false;
             StartCoroutine(hideUI());
         }
-        node = null;
     }
 
     //this is run when a node is clicked
@@ -71,13 +79,14 @@ public class Player : MonoBehaviour
     {
         if (node == nodeArg)
         {
+            showing = false;
             StartCoroutine(hideUI());
         }
         else
         {
-            StartCoroutine(showUI());
             node = nodeArg;
             cam.addPosition(node.transform.position);
+            StartCoroutine(showUI());
         }
     }
 }

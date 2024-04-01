@@ -5,7 +5,7 @@ using TMPro;
 
 public class Node : MonoBehaviour
 {
-    private int manPower, level, levelUpCost;
+    private int manPower, potionLevel, productionLevel, levelUpCost;
 
     [SerializeField]
     private bool isRoot, productionNode, potionNode, redTeam, neutral, producing;
@@ -61,7 +61,8 @@ public class Node : MonoBehaviour
     {
         productionNode = false;
         potionNode = false;
-        level = 0;
+        potionLevel = 0;
+        productionLevel = 0;
         if (isRoot)
         {
             manager.win();
@@ -78,7 +79,7 @@ public class Node : MonoBehaviour
                 break;
             case "production":
                 productionNode = true;
-                level = 1;
+                productionLevel += 1;
                 break;
             case "red":
                 resetNode();
@@ -92,7 +93,7 @@ public class Node : MonoBehaviour
                 break;
             case "potion":
                 potionNode = true;
-                level = 1;
+                potionLevel += 1;
                 break;
             case "root":
                 isRoot = true;
@@ -145,5 +146,10 @@ public class Node : MonoBehaviour
     {
         //transform.localScale /= 0.9f;
         clickSprite.SetActive(false);
+    }
+
+    public int returnManpower()
+    {
+        return manPower;
     }
 }
