@@ -8,10 +8,16 @@ public class Player : MonoBehaviour
 
     //showing refers to when the UI is shown, hiding is true when the UI is in the process of hiding and redTeam shows what team the player is in via a single variable
     [SerializeField]
-    private bool showing, hiding, redTeam;
+    private bool showing, hiding, redTeam, sending;
+
+    private int sendManPower;
 
     [SerializeField]
-    private GameObject node, UI_Prefab, current_UI;
+    private GameObject node, UI_Prefab, current_UI, selectedNode, army;
+
+    public List<GameObject> validNodes;
+
+    private Manager manager;
 
     [SerializeField]
     private Canvas UI_Canvas;
@@ -21,6 +27,7 @@ public class Player : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        manager = GameObject.FindGameObjectWithTag("MANAGER").GetComponent<Manager>();
         cam = GameObject.FindGameObjectWithTag("CAMHOLDER").GetComponent<MovingCam>();
     }
 
@@ -37,7 +44,7 @@ public class Player : MonoBehaviour
             showing = true;
             current_UI = Instantiate(UI_Prefab, UI_Canvas.transform);
             current_UI.transform.localPosition = new Vector3(0, -Screen.height * 1.5f);
-            current_UI.GetComponent<NodeInfoUI>().instantiateValues(node.GetComponent<Node>());
+            current_UI.GetComponent<NodeInfoUI>().instantiateValues(node.GetComponent<Node>(), this);
             LeanTween.cancelAll();
             current_UI.LeanMoveLocalY(-Screen.height * 0.35f, 1).setEaseOutExpo();
             yield return new WaitForSeconds(0.5f);
@@ -61,6 +68,43 @@ public class Player : MonoBehaviour
             node = null;
         }
         Destroy(current_UI, 0.5f);
+    }
+
+    public void selectNodesToSend(int manPower)
+    {
+        sendManPower = manPower;
+        sending = true;
+        selectedNode = node;
+        validNodes = selectedNode.GetComponent<Node>().returnAllNeigbours(new List<GameObject>());
+        validNodes.Remove(selectedNode);
+        foreach(GameObject nodeArg in validNodes)
+        {
+            nodeArg.GetComponent<Node>().showShadow(true);
+        }
+        StartCoroutine(hideUI());
+    }
+
+    public void chooseNode(GameObject nodeArg)
+    {
+        if (validNodes.Contains(nodeArg))
+        {
+            selectedNode.GetComponent<Node>().modifyManPower(sendManPower, false, redTeam);
+            GameObject sendArmy = Instantiate(army);
+            sendArmy.transform.position = selectedNode.transform.position;
+            sendArmy.GetComponent<Army>().assingValues(selectedNode, nodeArg, manager, sendManPower, redTeam);
+            cancelSend();
+        }
+    }
+
+    public void cancelSend()
+    {
+        foreach (GameObject nodeArg in validNodes)
+        {
+            nodeArg.GetComponent<Node>().showShadow(false);
+        }
+        sendManPower = 0;
+        selectedNode = null;
+        validNodes.Clear();
     }
 
     //this is run when the background is clicked

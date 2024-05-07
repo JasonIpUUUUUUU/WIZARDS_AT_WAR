@@ -8,7 +8,7 @@ public class Node : MonoBehaviour
     private int manPower, potionLevel, productionLevel, levelUpCost;
 
     [SerializeField]
-    private bool isRoot, productionNode, potionNode, redTeam, neutral, producing;
+    private bool isRoot, productionNode, potionNode, redTeam, neutral, producing, selecting;
 
     [SerializeField]
     Sprite redSprite, blueSprite, neutralSprite;
@@ -22,12 +22,14 @@ public class Node : MonoBehaviour
 
     private Player player;
 
+    public List<int> distances;
+
     //lists have to be kept public to be modified
     public List<GameObject> neighbours, paths;
 
-    //a transparent dark sprite that appears over the object when clicked so the player knows which node is selected
+    //transparent dark sprites to signify different states
     [SerializeField]
-    private GameObject clickSprite;
+    private GameObject clickSprite, selectSprite;
 
     // Start is called before the first frame update
     void Start()
@@ -51,7 +53,7 @@ public class Node : MonoBehaviour
     IEnumerator productionCoroutine()
     {
         producing = true;
-        modifyManPower(1, true);
+        modifyManPower(1, true, redTeam);
         yield return new WaitForSeconds(1);
         StartCoroutine(productionCoroutine());
     }
@@ -59,6 +61,7 @@ public class Node : MonoBehaviour
     //this is to reset the node back to default
     public void resetNode()
     {
+        neutral = true;
         productionNode = false;
         potionNode = false;
         potionLevel = 0;
@@ -83,11 +86,13 @@ public class Node : MonoBehaviour
                 break;
             case "red":
                 resetNode();
+                neutral = false;
                 redTeam = true;
                 renderer.sprite = redSprite;
                 break;
             case "blue":
                 resetNode();
+                neutral = false;
                 redTeam = false;
                 renderer.sprite = blueSprite;
                 break;
@@ -103,13 +108,21 @@ public class Node : MonoBehaviour
     }
 
     //this is to increase or decrease manpower on the node
-    public void modifyManPower(int amount, bool add)
+    public void modifyManPower(int amount, bool add, bool red)
     {
-        if (add)
+        if ((neutral || (redTeam == red)) && add)
         {
             manPower += amount;
+            if (red)
+            {
+                changeState("red");
+            }
+            else
+            {
+                changeState("blue");
+            }
         }
-        else
+        else 
         {
             manPower -= amount;
         }
@@ -117,13 +130,14 @@ public class Node : MonoBehaviour
     }
 
     //this manages what counts as a neighbour to this node
-    public void addNeighbour(GameObject neighbour, GameObject edge, bool addMore)
+    public void addNeighbour(GameObject neighbour, GameObject edge, int distance, bool addMore)
     {
         paths.Add(edge);
         neighbours.Add(neighbour);
+        distances.Add(distance);
         if (addMore)
         {
-            neighbour.GetComponent<Node>().addNeighbour(gameObject, edge, false);
+            neighbour.GetComponent<Node>().addNeighbour(gameObject, edge, distance, false);
         }
     }
 
@@ -133,12 +147,38 @@ public class Node : MonoBehaviour
         return neighbours.Contains(target);
     }
 
+    public List<GameObject> returnAllNeigbours(List<GameObject> initialList)
+    {
+        List<GameObject> currentObjects = new List<GameObject> { gameObject };
+        if (!neutral)
+        {
+            foreach(GameObject neighbour in neighbours)
+            {
+                if (!initialList.Contains(neighbour))
+                {
+                    currentObjects.AddRange(neighbour.GetComponent<Node>().returnAllNeigbours(currentObjects));
+                }
+            }
+        }
+        return currentObjects;
+    }
+
+    public void showShadow(bool doShow)
+    {
+        selecting = doShow;
+        selectSprite.SetActive(doShow);
+    }
+
     //a built in unity function which runs when the object is clicked
     private void OnMouseDown()
     {
         player.onNodeClicked(gameObject);
         //transform.localScale *= 0.9f;
         clickSprite.SetActive(true);
+        if (selecting)
+        {
+            player.chooseNode(gameObject);
+        }
     }
 
     //a built in unity function which runs when the object is let go of
