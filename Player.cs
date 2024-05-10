@@ -44,7 +44,7 @@ public class Player : MonoBehaviour
             showing = true;
             current_UI = Instantiate(UI_Prefab, UI_Canvas.transform);
             current_UI.transform.localPosition = new Vector3(0, -Screen.height * 1.5f);
-            current_UI.GetComponent<NodeInfoUI>().instantiateValues(node.GetComponent<Node>(), this);
+            current_UI.GetComponent<NodeInfoUI>().instantiateValues(node.GetComponent<Node>(), this, redTeam);
             LeanTween.cancelAll();
             current_UI.LeanMoveLocalY(-Screen.height * 0.35f, 1).setEaseOutExpo();
             yield return new WaitForSeconds(0.5f);
@@ -75,8 +75,8 @@ public class Player : MonoBehaviour
         sendManPower = manPower;
         sending = true;
         selectedNode = node;
-        validNodes = selectedNode.GetComponent<Node>().returnAllNeigbours(new List<GameObject>());
-        validNodes.Remove(selectedNode);
+        validNodes = selectedNode.GetComponent<Node>().returnAllNeigbours(new List<GameObject>(), redTeam);
+        validNodes.RemoveAll(obj => obj == selectedNode);
         foreach(GameObject nodeArg in validNodes)
         {
             nodeArg.GetComponent<Node>().showShadow(true);
@@ -102,9 +102,25 @@ public class Player : MonoBehaviour
         {
             nodeArg.GetComponent<Node>().showShadow(false);
         }
+        sending = false;
         sendManPower = 0;
         selectedNode = null;
         validNodes.Clear();
+    }
+
+    public void reselect(List<GameObject> neighbours)
+    {
+        if (sending)
+        {
+            foreach(GameObject neighbour in neighbours)
+            {
+                if(!validNodes.Contains(neighbour) && neighbour != selectedNode)
+                {
+                    validNodes.Add(neighbour);
+                    neighbour.GetComponent<Node>().showShadow(true);
+                }
+            }
+        }
     }
 
     //this is run when the background is clicked
@@ -132,5 +148,10 @@ public class Player : MonoBehaviour
             cam.addPosition(node.transform.position);
             StartCoroutine(showUI());
         }
+    }
+
+    public bool getTeam()
+    {
+        return redTeam;
     }
 }

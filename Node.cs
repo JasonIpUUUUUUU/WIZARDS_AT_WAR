@@ -5,7 +5,8 @@ using TMPro;
 
 public class Node : MonoBehaviour
 {
-    private int manPower, potionLevel, productionLevel, levelUpCost;
+    [SerializeField]
+    private int manPower, potionLevel, productionLevel = 1, levelUpCost;
 
     [SerializeField]
     private bool isRoot, productionNode, potionNode, redTeam, neutral, producing, selecting;
@@ -36,7 +37,6 @@ public class Node : MonoBehaviour
     {
         player = GameObject.FindGameObjectWithTag("PLAYER").GetComponent<Player>();
         manager = GameObject.FindGameObjectWithTag("MANAGER").GetComponent<Manager>();
-        renderer = GetComponent<SpriteRenderer>();
         manPowerText = GetComponentInChildren<TextMeshProUGUI>();
     }
 
@@ -54,7 +54,7 @@ public class Node : MonoBehaviour
     {
         producing = true;
         modifyManPower(1, true, redTeam);
-        yield return new WaitForSeconds(1);
+        yield return new WaitForSeconds(1f/productionLevel);
         StartCoroutine(productionCoroutine());
     }
 
@@ -65,7 +65,7 @@ public class Node : MonoBehaviour
         productionNode = false;
         potionNode = false;
         potionLevel = 0;
-        productionLevel = 0;
+        productionLevel = 1;
         if (isRoot)
         {
             manager.win();
@@ -82,7 +82,6 @@ public class Node : MonoBehaviour
                 break;
             case "production":
                 productionNode = true;
-                productionLevel += 1;
                 break;
             case "red":
                 resetNode();
@@ -101,6 +100,7 @@ public class Node : MonoBehaviour
                 potionLevel += 1;
                 break;
             case "root":
+                levelUpCost *= 2;
                 isRoot = true;
                 productionNode = true;
                 break;
@@ -110,21 +110,36 @@ public class Node : MonoBehaviour
     //this is to increase or decrease manpower on the node
     public void modifyManPower(int amount, bool add, bool red)
     {
-        if ((neutral || (redTeam == red)) && add)
+        if (neutral || (redTeam == red && add))
         {
             manPower += amount;
-            if (red)
+            if (neutral)
             {
-                changeState("red");
-            }
-            else
-            {
-                changeState("blue");
+                player.reselect(neighbours);
+                if (red)
+                {
+                    changeState("red");
+                }
+                else if (!red && (redTeam || neutral))
+                {
+                    changeState("blue");
+                }
             }
         }
-        else 
+        else
         {
             manPower -= amount;
+            if (manPower < 0)
+            {
+                if (red)
+                {
+                    changeState("blue");
+                }
+                else
+                {
+                    changeState("red");
+                }
+            }
         }
         manPowerText.text = manPower.ToString();
     }
@@ -147,16 +162,18 @@ public class Node : MonoBehaviour
         return neighbours.Contains(target);
     }
 
-    public List<GameObject> returnAllNeigbours(List<GameObject> initialList)
+    public List<GameObject> returnAllNeigbours(List<GameObject> initialList, bool playerTeam)
     {
         List<GameObject> currentObjects = new List<GameObject> { gameObject };
-        if (!neutral)
+        if (!neutral && playerTeam == redTeam)
         {
             foreach(GameObject neighbour in neighbours)
             {
                 if (!initialList.Contains(neighbour))
                 {
-                    currentObjects.AddRange(neighbour.GetComponent<Node>().returnAllNeigbours(currentObjects));
+                    List<GameObject> everything = currentObjects;
+                    everything.AddRange(initialList);
+                    currentObjects.AddRange(neighbour.GetComponent<Node>().returnAllNeigbours(everything, playerTeam));
                 }
             }
         }
@@ -191,5 +208,71 @@ public class Node : MonoBehaviour
     public int returnManpower()
     {
         return manPower;
+    }
+
+    public bool upgradeManpower()
+    {
+        if (levelUpCost <= manPower && redTeam == player.getTeam())
+        {
+            if (productionNode)
+            {
+                productionLevel++;
+            }
+            else
+            {
+                changeState("production");
+            }
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
+
+    public int getLevelUpCost()
+    {
+        return levelUpCost;
+    }
+
+    public int moreExpensiveUpgrades()
+    {
+        int originalCost = levelUpCost;
+        levelUpCost *= 5;
+        return originalCost;
+    }
+
+    public bool isNeutral()
+    {
+        return neutral;
+    }
+
+    public string getType()
+    {
+        if (isRoot)
+        {
+            return "root node";
+        }
+        if (potionNode)
+        {
+            return "potion node";
+        }
+        if (producing)
+        {
+            return "production node";
+        }
+        return "node";
+    }
+
+    public bool sameTeam()
+    {
+        if (neutral)
+        {
+            return false;
+        }
+        else
+        {
+            return redTeam == player.getTeam();
+        }
     }
 }

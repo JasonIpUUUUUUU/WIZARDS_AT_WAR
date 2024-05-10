@@ -9,7 +9,13 @@ public class Army : MonoBehaviour
 
     private int manpower, index = -1;
 
-    private float speed;
+    private float speed, timeCumulation = 0;
+
+    [SerializeField]
+    private SpriteRenderer renderer;
+
+    [SerializeField]
+    private Sprite redSprite, blueSprite;
 
     private GameObject start, target, next;
 
@@ -25,10 +31,10 @@ public class Army : MonoBehaviour
         if (moving)
         {
             //move towards the next node
-            transform.position = Vector3.MoveTowards(transform.position, next.transform.position, speed);
+            transform.position = Vector3.MoveTowards(transform.position, next.transform.position, speed * Time.deltaTime);
 
             //calculating time before reaching target (distance/speed)
-            if (path[path.Count - 1].Item1 == next && (next.transform.position - transform.position).magnitude * Time.deltaTime / speed < 0.4f && !disappearing)
+            if (path[path.Count - 1].Item1 == next && (next.transform.position - transform.position).magnitude / speed < 0.4f && !disappearing)
             {
                 disappearing = true;
                 StartCoroutine(disappear());
@@ -54,6 +60,14 @@ public class Army : MonoBehaviour
         path = manager.d_Algorithm(start, target);
         transform.position = start.transform.position;
         redTeam = redParam;
+        if (redTeam)
+        {
+            renderer.sprite = redSprite;
+        }
+        else
+        {
+            renderer.sprite = blueSprite;
+        }
         StartCoroutine(appear());
         nextNode();
     }
@@ -64,8 +78,14 @@ public class Army : MonoBehaviour
         index++;
         if(index < path.Count)
         {
+            //this shows the distance between the node and the army in a vector format
             Vector2 direction = path[index].Item1.transform.position - transform.position;
-            speed = direction.magnitude / path[index].Item2 * Time.deltaTime;
+
+            //speed = distance/time, the path[index].Item2 stores time needed to reach from the starting node so it is necessary to deduct it by the cumulation of time taken to reach previous nodes.
+            float distance = direction.magnitude;
+            float time = path[index].Item2;
+            Debug.Log(time);
+            speed = distance / time;
             float angle = Mathf.Atan2(direction.x, direction.y) * Mathf.Rad2Deg;
             transform.rotation = Quaternion.Euler(0f, 0f, -angle);
             moving = true;
@@ -79,6 +99,7 @@ public class Army : MonoBehaviour
         transform.localScale = Vector3.zero;
         gameObject.LeanScale(Vector2.one, 0.5f).setEaseInExpo();
         yield return new WaitForSeconds(0.5f);
+        transform.localScale = Vector3.one;
     }
 
     IEnumerator disappear()

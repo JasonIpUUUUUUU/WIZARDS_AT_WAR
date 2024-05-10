@@ -86,8 +86,11 @@ public class Manager : MonoBehaviour
 
         SortedSet<GameObject> queue = new SortedSet<GameObject>(Comparer<GameObject>.Create((a, b) =>
         {
-            int cmp = distances[a].CompareTo(distances[b]);
-            return cmp != 0 ? cmp : a.GetHashCode().CompareTo(b.GetHashCode());
+            //checks the path with a shorter distance
+            int thing = distances[a].CompareTo(distances[b]);
+
+            //checks if they are the same gameobject so even if they have the same key value, they are considered to be different
+            return thing != 0 ? thing : a.GetHashCode().CompareTo(b.GetHashCode());
         }));
 
         queue.Add(start);
@@ -97,7 +100,6 @@ public class Manager : MonoBehaviour
             GameObject currentNode = queue.Min;
 
             queue.Remove(currentNode);
-
             visited.Add(currentNode);
 
             if (currentNode == target)
@@ -108,9 +110,11 @@ public class Manager : MonoBehaviour
                     path.Insert(0, node);
                     node = previous[node];
                 }
+                int prevTime = 0;
                 for(int i = 1; i < path.Count; i++)
                 {
-                    output.Add((path[i], distances[path[i]]));
+                    output.Add((path[i], distances[path[i]] - prevTime));
+                    prevTime = distances[path[i]];
                 }
                 return output;
             }
@@ -118,7 +122,7 @@ public class Manager : MonoBehaviour
             Node nodeScript = currentNode.GetComponent<Node>();
             for(int i = 0; i < nodeScript.neighbours.Count; i++)
             {
-                if (visited.Contains(nodeScript.neighbours[i]))
+                if (visited.Contains(nodeScript.neighbours[i]) || (!nodeScript.sameTeam() && nodeScript.gameObject != target))
                 {
                     continue;
                 }
