@@ -2,17 +2,25 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
+using UnityEngine.UI;
 
 public class Node : MonoBehaviour
 {
     [SerializeField]
-    private int manPower, potionLevel, productionLevel = 1, levelUpCost;
+    private int manPower, productionLevel = 1, levelUpCost;
+
+    private float potionCounter, potionTime;
 
     [SerializeField]
-    private bool isRoot, productionNode, potionNode, redTeam, neutral, producing, selecting;
+    private bool isRoot, productionNode, redTeam, neutral, producing, selecting, hasPotion, makingPotion;
+
+    private string potion;
 
     [SerializeField]
     Sprite redSprite, blueSprite, neutralSprite;
+
+    [SerializeField]
+    Canvas nodeCanvas;
 
     [SerializeField]
     private SpriteRenderer renderer;
@@ -25,19 +33,30 @@ public class Node : MonoBehaviour
 
     public List<int> distances;
 
-    //lists have to be kept public to be modified
+    //lists have to be kept public to be modified for some reason
     public List<GameObject> neighbours, paths;
+
+    [SerializeField]
+    private Image potionBar;
+
+    [SerializeField]
+    private Color rootColor, productionColor, baseColor;
 
     //transparent dark sprites to signify different states
     [SerializeField]
-    private GameObject clickSprite, selectSprite;
+    private GameObject clickSprite, selectSprite, spinner, potionBarObject, potionVisual;
 
     // Start is called before the first frame update
     void Start()
     {
+        nodeCanvas.worldCamera = Camera.main;
         player = GameObject.FindGameObjectWithTag("PLAYER").GetComponent<Player>();
         manager = GameObject.FindGameObjectWithTag("MANAGER").GetComponent<Manager>();
         manPowerText = GetComponentInChildren<TextMeshProUGUI>();
+        if (!player.getTeam())
+        {
+            transform.rotation = Quaternion.Euler(new Vector3(0, 0, 180));
+        }
     }
 
     // Update is called once per frame
@@ -46,6 +65,19 @@ public class Node : MonoBehaviour
         if (!producing && productionNode)
         {
             StartCoroutine(productionCoroutine());
+        }
+
+        if (potionCounter > 0)
+        {
+            potionBar.fillAmount = returnPotionFill();
+            potionCounter -= Time.deltaTime;
+        }
+        else if (makingPotion)
+        {
+            potionBarObject.SetActive(false);
+            makingPotion = false;
+            hasPotion = true;
+            potionVisual.SetActive(true);
         }
     }
 
@@ -61,10 +93,9 @@ public class Node : MonoBehaviour
     //this is to reset the node back to default
     public void resetNode()
     {
+        hasPotion = false;
         neutral = true;
         productionNode = false;
-        potionNode = false;
-        potionLevel = 0;
         productionLevel = 1;
         if (isRoot)
         {
@@ -75,13 +106,16 @@ public class Node : MonoBehaviour
     //this is to chance the state of the node
     public void changeState(string changeThing)
     {
+        SpriteRenderer selfRenderer = GetComponent<SpriteRenderer>();
         switch (changeThing)
         {
             case "neutral":
+                selfRenderer.color = baseColor;
                 resetNode();
                 break;
             case "production":
                 productionNode = true;
+                selfRenderer.color = productionColor;
                 break;
             case "red":
                 resetNode();
@@ -95,11 +129,8 @@ public class Node : MonoBehaviour
                 redTeam = false;
                 renderer.sprite = blueSprite;
                 break;
-            case "potion":
-                potionNode = true;
-                potionLevel += 1;
-                break;
             case "root":
+                selfRenderer.color = rootColor;
                 levelUpCost *= 2;
                 isRoot = true;
                 productionNode = true;
@@ -235,6 +266,7 @@ public class Node : MonoBehaviour
         return levelUpCost;
     }
 
+
     public int moreExpensiveUpgrades()
     {
         int originalCost = levelUpCost;
@@ -253,15 +285,50 @@ public class Node : MonoBehaviour
         {
             return "root node";
         }
-        if (potionNode)
-        {
-            return "potion node";
-        }
         if (producing)
         {
             return "production node";
         }
         return "node";
+    }
+
+    public float returnPotionFill()
+    {
+        if (makingPotion)
+        {
+            return potionCounter / potionTime;
+        }
+        else
+        {
+            return 0;
+        }
+    }
+
+    public void addPotion(string potionArg, float potionTimeArg)
+    {
+        if (!hasPotion && !makingPotion)
+        {
+            potionBarObject.SetActive(true);
+            potion = potionArg;
+            potionTime = potionTimeArg;
+            potionCounter = potionTime;
+            makingPotion = true;
+        }
+    }
+
+    public string usePotion()
+    {
+        if (hasPotion)
+        {
+            Debug.Log("USING " + potion);
+            potionVisual.SetActive(false);
+            hasPotion = false;
+            return potion;
+        }
+        else
+        {
+            return "";
+        }
     }
 
     public bool sameTeam()
@@ -274,5 +341,10 @@ public class Node : MonoBehaviour
         {
             return redTeam == player.getTeam();
         }
+    }
+
+    public void spinShow(bool willShow)
+    {
+        spinner.SetActive(willShow);
     }
 }

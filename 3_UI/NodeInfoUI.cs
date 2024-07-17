@@ -6,14 +6,22 @@ using UnityEngine.UI;
 
 public class NodeInfoUI : MonoBehaviour
 {
-    private bool hasNode, redTeam, neutral;
+    private bool hasNode, redTeam, neutral, makingPotion;
     private Player player;
     private Node node;
 
-    private int manpower, sendAmount, upgradeCost, productionLevel, potionLevel;
+    private int manpower, sendAmount, upgradeCost;
+
+    private float potionCounter, potionTime;
 
     [SerializeField]
-    TextMeshProUGUI manPowerText, potionLevelText, productionLevelText, sendText, nodeType, upgradeText;
+    private GameObject potionScreen;
+
+    [SerializeField]
+    private TextMeshProUGUI manPowerText, potionLevelText, productionLevelText, sendText, nodeType, upgradeText;
+
+    [SerializeField]
+    private Image potionCover;
 
     [SerializeField]
     private Slider slider;
@@ -23,6 +31,7 @@ public class NodeInfoUI : MonoBehaviour
     {
         if (hasNode)
         {
+            potionCover.fillAmount = node.returnPotionFill();
             upgradeCost = node.getLevelUpCost();
             if (node.isNeutral())
             {
@@ -55,6 +64,15 @@ public class NodeInfoUI : MonoBehaviour
         }
     }
 
+    public void interactPotion()
+    {
+        if (!makingPotion)
+        {
+            potionScreen.GetComponent<Potion_UI>().setNode(node);
+            potionScreen.SetActive(true);
+        }
+    }
+
     public void startSend()
     {
         player.selectNodesToSend(sendAmount);
@@ -78,8 +96,9 @@ public class NodeInfoUI : MonoBehaviour
         sendAmount = (int)(slider.value * manpower);
     }
 
-    public void instantiateValues(Node nodeArg, Player playerArg, bool redArg)
+    public void instantiateValues(Node nodeArg, Player playerArg, bool redArg, GameObject potionArg)
     {
+        potionScreen = potionArg;
         redTeam = redArg;
         node = nodeArg;
         player = playerArg;

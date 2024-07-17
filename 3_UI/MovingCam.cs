@@ -5,17 +5,28 @@ using UnityEngine;
 public class MovingCam : MonoBehaviour
 {
     //forcedMoving is true when the player clicks onto a node and the camera is moved towards it
+    [SerializeField]
     private bool forcedMoving, canMove;
+
+    private int orientation = 1;
 
     [SerializeField]
     private float Ylimits, maxSize, minSize, moveSpeed, dragSpeed;
 
     public List<Vector3> movePositions;
 
+    private Player player;
+
     // Start is called before the first frame update
     void Start()
     {
+        player = GameObject.FindGameObjectWithTag("PLAYER").GetComponent<Player>();
         canMove = true;
+        if (player.getTeam() == false)
+        {
+            transform.rotation = Quaternion.Euler(new Vector3(0, 0, 180));
+            orientation = -1;
+        }
     }
 
     // Update is called once per frame
@@ -72,7 +83,7 @@ public class MovingCam : MonoBehaviour
     {
         if (canMove)
         {
-            transform.position += new Vector3(Input.GetAxis("Horizontal") * moveSpeed * Time.deltaTime, Input.GetAxis("Vertical") * moveSpeed * Time.deltaTime);
+            transform.position += new Vector3(Input.GetAxis("Horizontal") * moveSpeed * Time.deltaTime, Input.GetAxis("Vertical") * moveSpeed * Time.deltaTime) * orientation;
             if (!checkInputs())
             {
                 interruptMove();
@@ -100,7 +111,7 @@ public class MovingCam : MonoBehaviour
 
     public void dragMove(Vector3 initialMousePos, Vector3 currentMousePos, Vector3 offset)
     {
-        transform.position = offset - (currentMousePos - initialMousePos) * dragSpeed;
+        transform.position = offset - (currentMousePos - initialMousePos) * dragSpeed * orientation;
         transform.position = new Vector3(transform.position.x, transform.position.y, 0);
     }
 }

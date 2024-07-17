@@ -11,6 +11,8 @@ public class Army : MonoBehaviour
 
     private float speed, timeCumulation = 0;
 
+    private string potion;
+
     [SerializeField]
     private SpriteRenderer renderer;
 
@@ -49,7 +51,7 @@ public class Army : MonoBehaviour
         }
     }
 
-    public void assingValues(GameObject startParam, GameObject targetParam, Manager managerParam, int manpowerParam, bool redParam)
+    public void assingValues(GameObject startParam, GameObject targetParam, Manager managerParam, int manpowerParam, bool redParam, string potionArg)
     {
         //called when created so values can be passed into the object
         manager = managerParam;
@@ -60,6 +62,7 @@ public class Army : MonoBehaviour
         path = manager.d_Algorithm(start, target);
         transform.position = start.transform.position;
         redTeam = redParam;
+        potion = potionArg;
         if (redTeam)
         {
             renderer.sprite = redSprite;
@@ -84,7 +87,11 @@ public class Army : MonoBehaviour
             //speed = distance/time, the path[index].Item2 stores time needed to reach from the starting node so it is necessary to deduct it by the cumulation of time taken to reach previous nodes.
             float distance = direction.magnitude;
             float time = path[index].Item2;
-            Debug.Log(time);
+            if(potion == "HASTE")
+            {
+                Debug.Log("fast");
+                time /= 2;
+            }
             speed = distance / time;
             float angle = Mathf.Atan2(direction.x, direction.y) * Mathf.Rad2Deg;
             transform.rotation = Quaternion.Euler(0f, 0f, -angle);

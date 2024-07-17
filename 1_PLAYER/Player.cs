@@ -13,7 +13,7 @@ public class Player : MonoBehaviour
     private int sendManPower;
 
     [SerializeField]
-    private GameObject node, UI_Prefab, current_UI, selectedNode, army;
+    private GameObject node, UI_Prefab, potion_UI, current_UI, selectedNode, army;
 
     public List<GameObject> validNodes;
 
@@ -44,7 +44,7 @@ public class Player : MonoBehaviour
             showing = true;
             current_UI = Instantiate(UI_Prefab, UI_Canvas.transform);
             current_UI.transform.localPosition = new Vector3(0, -Screen.height * 1.5f);
-            current_UI.GetComponent<NodeInfoUI>().instantiateValues(node.GetComponent<Node>(), this, redTeam);
+            current_UI.GetComponent<NodeInfoUI>().instantiateValues(node.GetComponent<Node>(), this, redTeam, potion_UI);
             LeanTween.cancelAll();
             current_UI.LeanMoveLocalY(-Screen.height * 0.35f, 1).setEaseOutExpo();
             yield return new WaitForSeconds(0.5f);
@@ -91,7 +91,7 @@ public class Player : MonoBehaviour
             selectedNode.GetComponent<Node>().modifyManPower(sendManPower, false, redTeam);
             GameObject sendArmy = Instantiate(army);
             sendArmy.transform.position = selectedNode.transform.position;
-            sendArmy.GetComponent<Army>().assingValues(selectedNode, nodeArg, manager, sendManPower, redTeam);
+            sendArmy.GetComponent<Army>().assingValues(selectedNode, nodeArg, manager, sendManPower, redTeam, selectedNode.GetComponent<Node>().usePotion());
             cancelSend();
         }
     }
@@ -126,6 +126,10 @@ public class Player : MonoBehaviour
     //this is run when the background is clicked
     public void emptySpace()
     {
+        if (node)
+        {
+            node.GetComponent<Node>().spinShow(false);
+        }
         node = null;
         if (showing)
         {
@@ -139,12 +143,18 @@ public class Player : MonoBehaviour
     {
         if (node == nodeArg)
         {
+            node.GetComponent<Node>().spinShow(false);
             showing = false;
             StartCoroutine(hideUI());
         }
         else
         {
+            if (node)
+            {
+                node.GetComponent<Node>().spinShow(false);
+            }
             node = nodeArg;
+            node.GetComponent<Node>().spinShow(true);
             cam.addPosition(node.transform.position);
             StartCoroutine(showUI());
         }
