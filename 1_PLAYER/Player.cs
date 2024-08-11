@@ -98,6 +98,7 @@ public class Player : MonoBehaviour
 
     public void cancelSend()
     {
+        selectedNode.GetComponent<Node>().spinShow(false);
         foreach (GameObject nodeArg in validNodes)
         {
             nodeArg.GetComponent<Node>().showShadow(false);
@@ -126,7 +127,7 @@ public class Player : MonoBehaviour
     //this is run when the background is clicked
     public void emptySpace()
     {
-        if (node)
+        if (node && !sending)
         {
             node.GetComponent<Node>().spinShow(false);
         }
@@ -141,14 +142,20 @@ public class Player : MonoBehaviour
     //this is run when a node is clicked
     public void onNodeClicked(GameObject nodeArg)
     {
+        //if the nodeArg is equal to the selected node
         if (node == nodeArg)
         {
             node.GetComponent<Node>().spinShow(false);
             showing = false;
+            if (sending)
+            {
+                cancelSend();
+            }
             StartCoroutine(hideUI());
         }
         else
         {
+            // if there is a node currently being selected
             if (node)
             {
                 node.GetComponent<Node>().spinShow(false);

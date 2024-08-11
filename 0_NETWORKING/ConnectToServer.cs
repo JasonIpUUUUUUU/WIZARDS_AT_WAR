@@ -1,18 +1,21 @@
-using System.Collections;
 using System.Collections.Generic;
+using System.Collections;
 using UnityEngine;
+using Photon.Realtime;
+using Photon.Pun;
 
-public class ConnectToServer : MonoBehaviour
+
+public class QuickMatchExample : MonoBehaviourPunCallbacks
 {
-    // Start is called before the first frame update
     void Start()
     {
-        
+        // function used to connect to the network
+        PhotonNetwork.ConnectUsingSettings();
     }
 
-    // Update is called once per frame
-    void Update()
+    public override void OnConnectedToMaster()
     {
-        
+        Debug.Log("OnConnectedToMaster() was called by PUN.");
+        PhotonNetwork.JoinRandomRoom();
     }
 }

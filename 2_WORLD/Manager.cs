@@ -54,26 +54,40 @@ public class Manager : MonoBehaviour
         int currentNeighbour = 0;
         for(int i = 0; i < nodes.Count; i++)
         {
-            for(int x = 1; x <= neighbourCount[i]; x++)
+            //neighbourCount is the number of neighbours the node should have
+            for(int x = 0 ; x < neighbourCount[i]; x++)
             {
                 GameObject tempPath = Instantiate(edge);
                 tempPath.transform.position = Vector3.zero;
+                //set the starting and end point of the line so it connects the two ndoes
                 tempPath.GetComponent<LineRenderer>().SetPosition(0, nodes[i].transform.position);
                 tempPath.GetComponent<LineRenderer>().SetPosition(1, nodes[neigbours[currentNeighbour]].transform.position);
+                //set the distance the line represents in the edges script
                 tempPath.GetComponent<edges>().setDistance(distances[currentNeighbour]);
+                //add the neighbour node into the neighbour list of the node it is referencing.
                 nodes[i].GetComponent<Node>().addNeighbour(nodes[neigbours[currentNeighbour]], tempPath, distances[currentNeighbour], true);
                 currentNeighbour++;
             }
         }
     }
 
+    // This function returns a list of tuples with the first variable being the node and the second being the distance to said node, this selects the optimal path via dijkstra's algorithm
+    // it takes the starting node and target node as parameters
     public List<(GameObject, int)> d_Algorithm(GameObject start, GameObject target)
     {
+        // the list of nodes for the optimal path
         List<GameObject> path = new List<GameObject>();
+
+        // a dictionary containing the node as the key and the distance as the value so the shortest distance to a specific node can be found
         Dictionary<GameObject, int> distances = new Dictionary<GameObject, int>();
+
+        // a dictionary containing the current node as the key and the previous node to reaching that node as the value
         Dictionary<GameObject, GameObject> previous = new Dictionary<GameObject, GameObject>();
+
+        // a HashSet to keep track of all visited nodes
         HashSet<GameObject> visited = new HashSet<GameObject>();
 
+        // the final output which adds the information of distance to the path
         List<(GameObject, int)> output = new List<(GameObject, int)>();
 
         foreach (GameObject node in nodes)
@@ -84,6 +98,7 @@ public class Manager : MonoBehaviour
 
         distances[start] = 0;
 
+        // a priority queue which sorts nodes based on distances as they are appended and focuses on nodes with least distance
         SortedSet<GameObject> queue = new SortedSet<GameObject>(Comparer<GameObject>.Create((a, b) =>
         {
             //checks the path with a shorter distance
@@ -95,13 +110,15 @@ public class Manager : MonoBehaviour
 
         queue.Add(start);
 
+        // a while loop to find the optimal path by checking the shortest distance to the next node until the target is reached
         while (queue.Count > 0)
-        { 
+        {
+            // Get the node with the smallest distance and mark it as visited
             GameObject currentNode = queue.Min;
-
             queue.Remove(currentNode);
             visited.Add(currentNode);
 
+            // If the target node is reached, reconstruct the path and return it
             if (currentNode == target)
             {
                 GameObject node = target;
@@ -119,9 +136,11 @@ public class Manager : MonoBehaviour
                 return output;
             }
 
+            // iterate through each of the neighbours to find the next node
             Node nodeScript = currentNode.GetComponent<Node>();
             for(int i = 0; i < nodeScript.neighbours.Count; i++)
             {
+                // Skip visited nodes and nodes not on the same team (except the target node)
                 if (visited.Contains(nodeScript.neighbours[i]) || (!nodeScript.sameTeam() && nodeScript.gameObject != target))
                 {
                     continue;

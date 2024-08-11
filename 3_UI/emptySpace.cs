@@ -25,6 +25,7 @@ public class emptySpace : MonoBehaviour
         player.emptySpace();
     }
 
+    //detects when the background is being dragged which signals the camera to move
     private void OnMouseDrag()
     {
         camMove.dragMove(initialPos, Camera.main.ScreenToViewportPoint(Input.mousePosition), offset);

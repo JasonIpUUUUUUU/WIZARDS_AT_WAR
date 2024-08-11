@@ -31,8 +31,10 @@ public class NodeInfoUI : MonoBehaviour
     {
         if (hasNode)
         {
-            potionCover.fillAmount = node.returnPotionFill();
+            // displays how expensive the next upgrade should be
             upgradeCost = node.getLevelUpCost();
+
+            // detemines if the node has a team or not
             if (node.isNeutral())
             {
                 neutral = true;
@@ -42,10 +44,14 @@ public class NodeInfoUI : MonoBehaviour
                 neutral = false;
                 redTeam = player.getTeam();
             }
+
+            // display for the manpower
             manpower = node.returnManpower();
             manPowerText.text = sendAmount.ToString() + '/' + manpower.ToString();
             sendText.text = "Send amount: " + sendAmount.ToString();
             upgradeText.text = "UPGRADE: " + upgradeCost.ToString() + " MANPOWER";
+
+            // display of the node type
             if (neutral)
             {
                 nodeType.text = "NEUTRAL: node";
@@ -61,9 +67,14 @@ public class NodeInfoUI : MonoBehaviour
                     nodeType.text = "BLUE: " + node.getType();
                 }
             }
+            potionCover.fillAmount = node.returnPotionFill();
         }
+
+        // adjust the manpower to be controlled by a built in slider object
+        sendAmount = (int)(slider.value * manpower);
     }
 
+    // show the potion UI screen
     public void interactPotion()
     {
         if (!makingPotion)
@@ -73,9 +84,17 @@ public class NodeInfoUI : MonoBehaviour
         }
     }
 
+    // start sending manpower
     public void startSend()
     {
-        player.selectNodesToSend(sendAmount);
+        if (sendAmount > 0)
+        {
+            player.selectNodesToSend(sendAmount);
+        }
+        else
+        {
+            player.cancelSend();
+        }
     }
 
     public void startUpgrade()
@@ -89,11 +108,6 @@ public class NodeInfoUI : MonoBehaviour
         {
             Debug.Log("purchase failed");
         }
-    }
-
-    public void sliderManpower()
-    {
-        sendAmount = (int)(slider.value * manpower);
     }
 
     public void instantiateValues(Node nodeArg, Player playerArg, bool redArg, GameObject potionArg)

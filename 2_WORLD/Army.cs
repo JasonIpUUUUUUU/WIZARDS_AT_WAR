@@ -93,6 +93,7 @@ public class Army : MonoBehaviour
                 time /= 2;
             }
             speed = distance / time;
+            //conversion of the angle from radians to degrees
             float angle = Mathf.Atan2(direction.x, direction.y) * Mathf.Rad2Deg;
             transform.rotation = Quaternion.Euler(0f, 0f, -angle);
             moving = true;

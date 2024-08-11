@@ -72,7 +72,7 @@ public class Node : MonoBehaviour
             potionBar.fillAmount = returnPotionFill();
             potionCounter -= Time.deltaTime;
         }
-        else if (makingPotion)
+        else if(makingPotion)
         {
             potionBarObject.SetActive(false);
             makingPotion = false;
@@ -84,21 +84,30 @@ public class Node : MonoBehaviour
     //this is an infinite loop where the manpower on the node increments every second
     IEnumerator productionCoroutine()
     {
-        producing = true;
-        modifyManPower(1, true, redTeam);
-        yield return new WaitForSeconds(1f/productionLevel);
-        StartCoroutine(productionCoroutine());
+        if (productionNode)
+        {
+            producing = true;
+            modifyManPower(1, true, redTeam);
+            yield return new WaitForSeconds(1f / productionLevel);
+            StartCoroutine(productionCoroutine());
+        }
     }
 
     //this is to reset the node back to default
     public void resetNode()
     {
+        GetComponent<SpriteRenderer>().color = baseColor;
         hasPotion = false;
         neutral = true;
         productionNode = false;
         productionLevel = 1;
+        if(manPower < 0)
+        {
+            manPower *= -1;
+        }
         if (isRoot)
         {
+            //the only scenario at which is root node will be resetted is if it is taken over of. So this can act as a criteria for victory
             manager.win();
         }
     }
@@ -110,26 +119,31 @@ public class Node : MonoBehaviour
         switch (changeThing)
         {
             case "neutral":
+                //neutral nodes are not occupied by either players
                 selfRenderer.color = baseColor;
                 resetNode();
                 break;
             case "production":
+                //production nodes have a blue background and produce manpower
                 productionNode = true;
                 selfRenderer.color = productionColor;
                 break;
             case "red":
+                //red nodes are nodes occupied by the red team
                 resetNode();
                 neutral = false;
                 redTeam = true;
                 renderer.sprite = redSprite;
                 break;
             case "blue":
+                //blue nodes are nodes occupied by the blue team
                 resetNode();
                 neutral = false;
                 redTeam = false;
                 renderer.sprite = blueSprite;
                 break;
             case "root":
+                //root nodes produce manpower and are the most important nodes which determine victory
                 selfRenderer.color = rootColor;
                 levelUpCost *= 2;
                 isRoot = true;
@@ -162,7 +176,7 @@ public class Node : MonoBehaviour
             manPower -= amount;
             if (manPower < 0)
             {
-                if (red)
+                if (redTeam)
                 {
                     changeState("blue");
                 }
@@ -183,6 +197,7 @@ public class Node : MonoBehaviour
         distances.Add(distance);
         if (addMore)
         {
+            //it then adds itself as a node to it's neighbour if it hasn't already
             neighbour.GetComponent<Node>().addNeighbour(gameObject, edge, distance, false);
         }
     }
@@ -223,6 +238,8 @@ public class Node : MonoBehaviour
         player.onNodeClicked(gameObject);
         //transform.localScale *= 0.9f;
         clickSprite.SetActive(true);
+
+        // if the node is being selected for sending an army to it, call a function in the player script to do so
         if (selecting)
         {
             player.chooseNode(gameObject);
@@ -234,11 +251,6 @@ public class Node : MonoBehaviour
     {
         //transform.localScale /= 0.9f;
         clickSprite.SetActive(false);
-    }
-
-    public int returnManpower()
-    {
-        return manPower;
     }
 
     public bool upgradeManpower()
@@ -261,17 +273,21 @@ public class Node : MonoBehaviour
         }
     }
 
-    public int getLevelUpCost()
-    {
-        return levelUpCost;
-    }
-
-
     public int moreExpensiveUpgrades()
     {
         int originalCost = levelUpCost;
         levelUpCost *= 5;
         return originalCost;
+    }
+
+    public int returnManpower()
+    {
+        return manPower;
+    }
+
+    public int getLevelUpCost()
+    {
+        return levelUpCost;
     }
 
     public bool isNeutral()
