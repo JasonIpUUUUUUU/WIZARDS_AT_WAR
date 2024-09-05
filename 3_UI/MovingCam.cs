@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Photon.Pun;
 
 public class MovingCam : MonoBehaviour
 {
@@ -14,6 +15,9 @@ public class MovingCam : MonoBehaviour
     private float Ylimits, maxSize, minSize, moveSpeed, dragSpeed;
 
     public List<Vector3> movePositions;
+
+    [SerializeField]
+    private Camera cam;
 
     private Player player;
 

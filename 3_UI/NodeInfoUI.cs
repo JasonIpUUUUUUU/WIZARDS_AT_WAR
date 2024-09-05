@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
 using UnityEngine.UI;
+using Photon.Realtime;
+using Photon.Pun;
 
 public class NodeInfoUI : MonoBehaviour
 {
@@ -15,7 +17,7 @@ public class NodeInfoUI : MonoBehaviour
     private float potionCounter, potionTime;
 
     [SerializeField]
-    private GameObject potionScreen;
+    private GameObject potionScreen, playerUI;
 
     [SerializeField]
     private TextMeshProUGUI manPowerText, potionLevelText, productionLevelText, sendText, nodeType, upgradeText;
@@ -25,6 +27,8 @@ public class NodeInfoUI : MonoBehaviour
 
     [SerializeField]
     private Slider slider;
+
+    private PhotonView playerView;
 
     // Update is called once per frame
     void Update()
@@ -42,7 +46,14 @@ public class NodeInfoUI : MonoBehaviour
             else
             {
                 neutral = false;
-                redTeam = player.getTeam();
+                if (node.sameTeam())
+                {
+                    redTeam = player.getTeam();
+                }
+                else
+                {
+                    redTeam = !player.getTeam();
+                }
             }
 
             // display for the manpower
@@ -72,6 +83,16 @@ public class NodeInfoUI : MonoBehaviour
 
         // adjust the manpower to be controlled by a built in slider object
         sendAmount = (int)(slider.value * manpower);
+
+        // determines whether the player should be shown the UI based on the team
+        if (neutral || (redTeam != player.getTeam()))
+        {
+            playerUI.SetActive(false);
+        }
+        else
+        {
+            playerUI.SetActive(true);
+        }
     }
 
     // show the potion UI screen
@@ -101,7 +122,14 @@ public class NodeInfoUI : MonoBehaviour
     {
         if (node.upgradeManpower())
         {
-            node.modifyManPower(node.moreExpensiveUpgrades(), false, redTeam);
+            if (player.isSinglePlayer())
+            {
+                node.modifyManPower(node.moreExpensiveUpgrades(), false, redTeam);
+            }
+            else if(playerView.IsMine)
+            {
+                playerView.RPC("modifyManpower", RpcTarget.AllBuffered, node.name, node.moreExpensiveUpgrades(), false, redTeam);
+            }
             upgradeCost = node.getLevelUpCost();
         }
         else
@@ -116,6 +144,7 @@ public class NodeInfoUI : MonoBehaviour
         redTeam = redArg;
         node = nodeArg;
         player = playerArg;
+        playerView = player.GetComponent<PhotonView>();
         hasNode = true;
     }
 }

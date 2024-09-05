@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Photon.Pun;
 
 public class Manager : MonoBehaviour
 {
@@ -13,38 +14,46 @@ public class Manager : MonoBehaviour
     public List<GameObject> nodes;
 
     [SerializeField]
-    private GameObject edge, node;
+    private GameObject edge, node, player;
 
     [SerializeField]
     private Transform map;
 
+    private PhotonView view;
+
     // Start is called before the first frame update
     void Start()
     {
-        spawnNodes();
+        view = GetComponent<PhotonView>();
+        player = GameObject.FindGameObjectWithTag("PLAYER");
+        if (player.GetComponent<Player>().isSinglePlayer())
+        {
+            Debug.Log("started");
+            spawnNodes();
+        }
+        else if (view.IsMine)
+        {
+            Debug.Log("started2");
+            view.RPC("spawnNodes", RpcTarget.AllBuffered);
+        }
     }
 
-    // Update is called once per frame
-    void Update()
+    [PunRPC]
+    public void spawnNodes()
     {
-        
-    }
-
-    void spawnNodes()
-    {
-        //firstly it spawn the nodes onto the map at the specified positions and sets its parent to the map
-        for(int i = 0; i < spawnPositions.Length; i++)
+        // firstly it spawn the nodes onto the map at the specified positions and sets its parent to the map
+        for (int i = 0; i < spawnPositions.Length; i++)
         {
             GameObject tempNode = Instantiate(node, map);
-            tempNode.name = "node" + i.ToString();
             tempNode.transform.position = spawnPositions[i];
+            tempNode.name = "node" + i.ToString();
             nodes.Add(tempNode);
-            if(i == 0)
+            if (i == 0)
             {
                 tempNode.GetComponent<Node>().changeState("blue");
                 tempNode.GetComponent<Node>().changeState("root");
             }
-            else if(i == spawnPositions.Length - 1)
+            else if (i == spawnPositions.Length - 1)
             {
                 tempNode.GetComponent<Node>().changeState("red");
                 tempNode.GetComponent<Node>().changeState("root");
@@ -54,14 +63,15 @@ public class Manager : MonoBehaviour
         int currentNeighbour = 0;
         for(int i = 0; i < nodes.Count; i++)
         {
-            //neighbourCount is the number of neighbours the node should have
             for(int x = 0 ; x < neighbourCount[i]; x++)
             {
-                GameObject tempPath = Instantiate(edge);
+                GameObject tempPath;
+                Vector2 startPoint = nodes[i].transform.position;
+                Vector2 endPoint = nodes[neigbours[currentNeighbour]].transform.position;
+                tempPath = Instantiate(edge);
                 tempPath.transform.position = Vector3.zero;
                 //set the starting and end point of the line so it connects the two ndoes
-                tempPath.GetComponent<LineRenderer>().SetPosition(0, nodes[i].transform.position);
-                tempPath.GetComponent<LineRenderer>().SetPosition(1, nodes[neigbours[currentNeighbour]].transform.position);
+                tempPath.GetComponent<edges>().setLine(startPoint, endPoint);
                 //set the distance the line represents in the edges script
                 tempPath.GetComponent<edges>().setDistance(distances[currentNeighbour]);
                 //add the neighbour node into the neighbour list of the node it is referencing.

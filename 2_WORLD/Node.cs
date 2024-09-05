@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
 using UnityEngine.UI;
+using Photon.Pun;
 
 public class Node : MonoBehaviour
 {
@@ -46,11 +47,14 @@ public class Node : MonoBehaviour
     [SerializeField]
     private GameObject clickSprite, selectSprite, spinner, potionBarObject, potionVisual;
 
+    private PhotonView playerView;
+
     // Start is called before the first frame update
     void Start()
     {
         nodeCanvas.worldCamera = Camera.main;
         player = GameObject.FindGameObjectWithTag("PLAYER").GetComponent<Player>();
+        playerView = player.GetComponent<PhotonView>();
         manager = GameObject.FindGameObjectWithTag("MANAGER").GetComponent<Manager>();
         manPowerText = GetComponentInChildren<TextMeshProUGUI>();
         if (!player.getTeam())
@@ -72,7 +76,7 @@ public class Node : MonoBehaviour
             potionBar.fillAmount = returnPotionFill();
             potionCounter -= Time.deltaTime;
         }
-        else if(makingPotion)
+        else if (makingPotion)
         {
             potionBarObject.SetActive(false);
             makingPotion = false;
@@ -87,7 +91,14 @@ public class Node : MonoBehaviour
         if (productionNode)
         {
             producing = true;
-            modifyManPower(1, true, redTeam);
+            if (player.isSinglePlayer())
+            {
+                modifyManPower(1, true, redTeam);
+            }
+            else if (playerView.IsMine)
+            {
+                playerView.RPC("modifyManpower", RpcTarget.AllBuffered, name, 1, true, redTeam);
+            }
             yield return new WaitForSeconds(1f / productionLevel);
             StartCoroutine(productionCoroutine());
         }
@@ -101,7 +112,7 @@ public class Node : MonoBehaviour
         neutral = true;
         productionNode = false;
         productionLevel = 1;
-        if(manPower < 0)
+        if (manPower < 0)
         {
             manPower *= -1;
         }
@@ -110,83 +121,6 @@ public class Node : MonoBehaviour
             //the only scenario at which is root node will be resetted is if it is taken over of. So this can act as a criteria for victory
             manager.win();
         }
-    }
-
-    //this is to chance the state of the node
-    public void changeState(string changeThing)
-    {
-        SpriteRenderer selfRenderer = GetComponent<SpriteRenderer>();
-        switch (changeThing)
-        {
-            case "neutral":
-                //neutral nodes are not occupied by either players
-                selfRenderer.color = baseColor;
-                resetNode();
-                break;
-            case "production":
-                //production nodes have a blue background and produce manpower
-                productionNode = true;
-                selfRenderer.color = productionColor;
-                break;
-            case "red":
-                //red nodes are nodes occupied by the red team
-                resetNode();
-                neutral = false;
-                redTeam = true;
-                renderer.sprite = redSprite;
-                break;
-            case "blue":
-                //blue nodes are nodes occupied by the blue team
-                resetNode();
-                neutral = false;
-                redTeam = false;
-                renderer.sprite = blueSprite;
-                break;
-            case "root":
-                //root nodes produce manpower and are the most important nodes which determine victory
-                selfRenderer.color = rootColor;
-                levelUpCost *= 2;
-                isRoot = true;
-                productionNode = true;
-                break;
-        }
-    }
-
-    //this is to increase or decrease manpower on the node
-    public void modifyManPower(int amount, bool add, bool red)
-    {
-        if (neutral || (redTeam == red && add))
-        {
-            manPower += amount;
-            if (neutral)
-            {
-                player.reselect(neighbours);
-                if (red)
-                {
-                    changeState("red");
-                }
-                else if (!red && (redTeam || neutral))
-                {
-                    changeState("blue");
-                }
-            }
-        }
-        else
-        {
-            manPower -= amount;
-            if (manPower < 0)
-            {
-                if (redTeam)
-                {
-                    changeState("blue");
-                }
-                else
-                {
-                    changeState("red");
-                }
-            }
-        }
-        manPowerText.text = manPower.ToString();
     }
 
     //this manages what counts as a neighbour to this node
@@ -213,7 +147,7 @@ public class Node : MonoBehaviour
         List<GameObject> currentObjects = new List<GameObject> { gameObject };
         if (!neutral && playerTeam == redTeam)
         {
-            foreach(GameObject neighbour in neighbours)
+            foreach (GameObject neighbour in neighbours)
             {
                 if (!initialList.Contains(neighbour))
                 {
@@ -236,13 +170,11 @@ public class Node : MonoBehaviour
     private void OnMouseDown()
     {
         player.onNodeClicked(gameObject);
-        //transform.localScale *= 0.9f;
         clickSprite.SetActive(true);
-
         // if the node is being selected for sending an army to it, call a function in the player script to do so
         if (selecting)
         {
-            player.chooseNode(gameObject);
+            player.chooseNode(name);
         }
     }
 
@@ -362,5 +294,84 @@ public class Node : MonoBehaviour
     public void spinShow(bool willShow)
     {
         spinner.SetActive(willShow);
+    }
+
+    [PunRPC]
+    //this is to increase or decrease manpower on the node
+    public void modifyManPower(int amount, bool add, bool red)
+    {
+        if (neutral || (redTeam == red && add))
+        {
+            manPower += amount;
+            if (neutral)
+            {
+                player.reselect(neighbours);
+                if (red)
+                {
+                    changeState("red");
+                }
+                else if (!red && (redTeam || neutral))
+                {
+                    changeState("blue");
+                }
+            }
+        }
+        else
+        {
+            manPower -= amount;
+            if (manPower < 0)
+            {
+                if (redTeam)
+                {
+                    changeState("blue");
+                }
+                else
+                {
+                    changeState("red");
+                }
+            }
+        }
+        manPowerText.text = manPower.ToString();
+    }
+
+    [PunRPC]
+    //this is to chance the state of the node
+    public void changeState(string changeThing)
+    {
+        SpriteRenderer selfRenderer = GetComponent<SpriteRenderer>();
+        switch (changeThing)
+        {
+            case "neutral":
+                //neutral nodes are not occupied by either players
+                selfRenderer.color = baseColor;
+                resetNode();
+                break;
+            case "production":
+                //production nodes have a blue background and produce manpower
+                productionNode = true;
+                selfRenderer.color = productionColor;
+                break;
+            case "red":
+                //red nodes are nodes occupied by the red team
+                resetNode();
+                neutral = false;
+                redTeam = true;
+                renderer.sprite = redSprite;
+                break;
+            case "blue":
+                //blue nodes are nodes occupied by the blue team
+                resetNode();
+                neutral = false;
+                redTeam = false;
+                renderer.sprite = blueSprite;
+                break;
+            case "root":
+                //root nodes produce manpower and are the most important nodes which determine victory
+                selfRenderer.color = rootColor;
+                levelUpCost *= 2;
+                isRoot = true;
+                productionNode = true;
+                break;
+        }
     }
 }

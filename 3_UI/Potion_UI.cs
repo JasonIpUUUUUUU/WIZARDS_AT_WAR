@@ -14,9 +14,10 @@ public class Potion_UI : MonoBehaviour
         node = nodeArg;
     }
 
-    public void attachPotion()
+    public void attachPotion(int slot)
     {
-        node.addPotion("HASTE", 10);
+        string slotName = "SLOT" + slot.ToString();
+        node.addPotion(slotName, 10);
         closeUI();
     }
 
