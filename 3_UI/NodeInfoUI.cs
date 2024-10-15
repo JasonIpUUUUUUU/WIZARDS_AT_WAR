@@ -46,7 +46,7 @@ public class NodeInfoUI : MonoBehaviour
             else
             {
                 neutral = false;
-                if (node.sameTeam())
+                if (node.sameTeam(player.getTeam()))
                 {
                     redTeam = player.getTeam();
                 }
@@ -79,6 +79,47 @@ public class NodeInfoUI : MonoBehaviour
                 }
             }
             potionCover.fillAmount = node.returnPotionFill();
+
+            if (node.sameTeam(redTeam))
+            {
+                if (Input.GetKeyDown(KeyCode.P))
+                {
+                    interactPotion(!potionScreen.active);
+                }
+                if (Input.GetKeyDown(KeyCode.Alpha1))
+                {
+                    slider.value = 0.25f;
+                }
+                if (Input.GetKeyDown(KeyCode.Alpha2))
+                {
+                    slider.value = 0.5f;
+                }
+                if (Input.GetKeyDown(KeyCode.Alpha3))
+                {
+                    slider.value = 0.75f;
+                }
+                if (Input.GetKeyDown(KeyCode.Alpha4))
+                {
+                    slider.value = 1;
+                }
+                if (Input.GetKeyDown(KeyCode.Return))
+                {
+                    startSend();
+                }
+                if (Input.GetKeyDown(KeyCode.U))
+                {
+                    startUpgrade();
+                }
+                if (Input.GetKeyDown(KeyCode.E))
+                {
+                    Debug.Log(manpower);
+                    slider.value += 1f / manpower;
+                }
+                if (Input.GetKeyDown(KeyCode.Q))
+                {
+                    slider.value -= 1f / manpower;
+                }
+            }
         }
 
         // adjust the manpower to be controlled by a built in slider object
@@ -96,12 +137,15 @@ public class NodeInfoUI : MonoBehaviour
     }
 
     // show the potion UI screen
-    public void interactPotion()
+    public void interactPotion(bool potionParam)
     {
         if (!makingPotion)
         {
-            potionScreen.GetComponent<Potion_UI>().setNode(node);
-            potionScreen.SetActive(true);
+            if (potionParam)
+            {
+                potionScreen.GetComponent<Potion_UI>().setNode(node);
+            }
+            potionScreen.SetActive(potionParam);
         }
     }
 
@@ -126,7 +170,7 @@ public class NodeInfoUI : MonoBehaviour
             {
                 node.modifyManPower(node.moreExpensiveUpgrades(), false, redTeam);
             }
-            else if(playerView.IsMine)
+            else
             {
                 playerView.RPC("modifyManpower", RpcTarget.AllBuffered, node.name, node.moreExpensiveUpgrades(), false, redTeam);
             }

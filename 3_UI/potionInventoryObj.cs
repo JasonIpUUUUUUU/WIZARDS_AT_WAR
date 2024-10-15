@@ -14,21 +14,11 @@ public class potionInventoryObj : MonoBehaviour
     [SerializeField]
     private TextMeshProUGUI potionDesc;
 
-    // Start is called before the first frame update
-    void Start()
+    public void setPotion(string potionTypeParam, Inventory inventoryParam, string desc)
     {
-        inventory = GameObject.FindGameObjectWithTag("INVENTORY").GetComponent<Inventory>();
-    }
-
-    public void setPotion(string potionTypeParam)
-    {
+        inventory = inventoryParam;
         potionType = potionTypeParam;
-        switch (potionType)
-        {
-            case "SPEED":
-                potionDesc.text = "Speed potion: doubles movement speed of army when used until the army reaches its destination";
-                break;
-        }
+        potionDesc.text = desc;
     }
 
     public void equipPotion()

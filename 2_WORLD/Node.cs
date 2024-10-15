@@ -8,12 +8,14 @@ using Photon.Pun;
 public class Node : MonoBehaviour
 {
     [SerializeField]
-    private int manPower, productionLevel = 1, levelUpCost;
+    private int manPower, productionLevel = 1, levelUpCost, initialCost, knightStrength;
 
-    private float potionCounter, potionTime;
+    private float potionCounter, potionTime, knightMin, knightMax;
+
+    private BossBehaviour bossScript;
 
     [SerializeField]
-    private bool isRoot, productionNode, redTeam, neutral, producing, selecting, hasPotion, makingPotion;
+    private bool isRoot, productionNode, redTeam, neutral, producing, selecting, hasPotion, makingPotion, knight;
 
     private string potion;
 
@@ -60,6 +62,10 @@ public class Node : MonoBehaviour
         if (!player.getTeam())
         {
             transform.rotation = Quaternion.Euler(new Vector3(0, 0, 180));
+        }
+        if(PlayerPrefs.GetInt("SINGLE") == 1)
+        {
+            bossScript = GameObject.FindGameObjectWithTag("BOSS").GetComponent<BossBehaviour>();
         }
     }
 
@@ -108,18 +114,22 @@ public class Node : MonoBehaviour
     public void resetNode()
     {
         GetComponent<SpriteRenderer>().color = baseColor;
+        knight = false;
         hasPotion = false;
         neutral = true;
         productionNode = false;
+        producing = false;
         productionLevel = 1;
+        levelUpCost = initialCost;
         if (manPower < 0)
         {
             manPower *= -1;
         }
         if (isRoot)
         {
-            //the only scenario at which is root node will be resetted is if it is taken over of. So this can act as a criteria for victory
-            manager.win();
+            // the only scenario at which is root node will be resetted is if it is taken over of. So this can act as a criteria for victory
+            // !redTeam is necessary as it's the opposite team who won
+            manager.win(!redTeam);
         }
     }
 
@@ -191,11 +201,25 @@ public class Node : MonoBehaviour
         {
             if (productionNode)
             {
-                productionLevel++;
+                if (player.isSinglePlayer())
+                {
+                    productionLevel++;
+                }
+                else
+                {
+                    playerView.RPC("increaseProductionLevel", RpcTarget.AllBuffered, name);
+                }
             }
             else
             {
-                changeState("production");
+                if (player.isSinglePlayer())
+                {
+                    changeState("production");
+                }
+                else
+                {
+                    playerView.RPC("changeNodeState", RpcTarget.AllBuffered, name, "production");
+                }
             }
             return true;
         }
@@ -203,6 +227,11 @@ public class Node : MonoBehaviour
         {
             return false;
         }
+    }
+
+    public void increaseProductionLevel()
+    {
+        productionLevel++;
     }
 
     public int moreExpensiveUpgrades()
@@ -279,7 +308,7 @@ public class Node : MonoBehaviour
         }
     }
 
-    public bool sameTeam()
+    public bool sameTeam(bool team)
     {
         if (neutral)
         {
@@ -287,7 +316,7 @@ public class Node : MonoBehaviour
         }
         else
         {
-            return redTeam == player.getTeam();
+            return redTeam == team;
         }
     }
 
@@ -296,9 +325,20 @@ public class Node : MonoBehaviour
         spinner.SetActive(willShow);
     }
 
-    [PunRPC]
+    public edges returnPath(GameObject targetParam)
+    {
+        for(int i = 0; i < neighbours.Count; i++)
+        {
+            if(neighbours[i] == targetParam)
+            {
+                return paths[i].GetComponent<edges>();
+            }
+        }
+        return null;
+    }
+
     //this is to increase or decrease manpower on the node
-    public void modifyManPower(int amount, bool add, bool red)
+    public void modifyManPower(int amount, bool add, bool red, bool transformed = false)
     {
         if (neutral || (redTeam == red && add))
         {
@@ -308,11 +348,25 @@ public class Node : MonoBehaviour
                 player.reselect(neighbours);
                 if (red)
                 {
-                    changeState("red");
+                    if (player.isSinglePlayer())
+                    {
+                        changeState("red");
+                    }
+                    else if(playerView.IsMine)
+                    {
+                        playerView.RPC("changeNodeState", RpcTarget.AllBuffered, name, "red");
+                    }
                 }
                 else if (!red && (redTeam || neutral))
                 {
-                    changeState("blue");
+                    if (player.isSinglePlayer())
+                    {
+                        changeState("blue");
+                    }
+                    else if (playerView.IsMine)
+                    {
+                        playerView.RPC("changeNodeState", RpcTarget.AllBuffered, name, "blue");
+                    }
                 }
             }
         }
@@ -321,20 +375,55 @@ public class Node : MonoBehaviour
             manPower -= amount;
             if (manPower < 0)
             {
+                manPower *= -1;
                 if (redTeam)
                 {
-                    changeState("blue");
+                    if (player.isSinglePlayer())
+                    {
+                        changeState("blue");
+                        if (transformed)
+                        {
+                            knightMin = 6;
+                            knightMax = 20;
+                            knightStrength = 10;
+                            changeState("knight");
+                        }
+                    }
+                    else if (playerView.IsMine)
+                    {
+                        playerView.RPC("changeNodeState", RpcTarget.AllBuffered, name, "blue");
+                    }
                 }
                 else
                 {
-                    changeState("red");
+                    if (player.isSinglePlayer())
+                    {
+                        changeState("red");
+                    }
+                    else if (playerView.IsMine)
+                    {
+                        playerView.RPC("changeNodeState", RpcTarget.AllBuffered, name, "red");
+                    }
                 }
             }
+        }
+        // in case manPowerText hasn't been obtained yet
+        if (!manPowerText)
+        {
+            manPowerText = GetComponentInChildren<TextMeshProUGUI>();
         }
         manPowerText.text = manPower.ToString();
     }
 
-    [PunRPC]
+    // for when the production potion is used
+    public IEnumerator tempIncreaseProduction(float duration)
+    {
+        productionLevel++;
+        yield return new WaitForSeconds(duration);
+        Debug.Log("revert");
+        productionLevel--;
+    }
+
     //this is to chance the state of the node
     public void changeState(string changeThing)
     {
@@ -342,36 +431,105 @@ public class Node : MonoBehaviour
         switch (changeThing)
         {
             case "neutral":
-                //neutral nodes are not occupied by either players
+                // neutral nodes are not occupied by either players
                 selfRenderer.color = baseColor;
                 resetNode();
                 break;
             case "production":
-                //production nodes have a blue background and produce manpower
+                // production nodes have a blue background and produce manpower
                 productionNode = true;
                 selfRenderer.color = productionColor;
                 break;
             case "red":
-                //red nodes are nodes occupied by the red team
+                // red nodes are nodes occupied by the red team
                 resetNode();
                 neutral = false;
                 redTeam = true;
                 renderer.sprite = redSprite;
                 break;
             case "blue":
-                //blue nodes are nodes occupied by the blue team
+                // blue nodes are nodes occupied by the blue team
                 resetNode();
                 neutral = false;
                 redTeam = false;
                 renderer.sprite = blueSprite;
                 break;
             case "root":
-                //root nodes produce manpower and are the most important nodes which determine victory
+                // root nodes produce manpower and are the most important nodes which determine victory
                 selfRenderer.color = rootColor;
-                levelUpCost *= 2;
+                levelUpCost = initialCost * 2;
                 isRoot = true;
                 productionNode = true;
                 break;
+            case "boss":
+                bossScript = GameObject.FindGameObjectWithTag("BOSS").GetComponent<BossBehaviour>();
+                // boss nodes start with a set amount of health and have to be defeated by the player in singleplayer
+                selfRenderer.color = rootColor;
+                isRoot = true;
+                // increases manpower by the health of the boss and gives a reference of this script to the boss
+                modifyManPower(bossScript.linkNode(this), true, redTeam);
+                break;
+            case "knight":
+                knight = true;
+                StartCoroutine(knightLoop());
+                break;
         }
+    }
+
+    // a loop for if the node is a knight node (limited to royal wizard fight)
+    IEnumerator knightLoop()
+    {
+        float randoTime = Random.Range(knightMin, knightMax);
+        yield return new WaitForSeconds(randoTime);
+        if (knight)
+        {
+            createKnight();
+            StartCoroutine(knightLoop());
+        }
+    }
+
+    public void setKnightStrength(int strength, float knightMinP, float knightMaxP)
+    {
+        // so the boss itself produces manpower differently to normal nodes
+        knightStrength = strength;
+        knightMin = knightMinP;
+        knightMax = knightMaxP;
+    }
+
+    // returns a singular node which it can conquer, the node is randomly selected
+    public GameObject returnRandomNeigbour(List<GameObject> initialList, bool playerTeam)
+    {
+        // define initial lists such as a list of of the nodes that have been explored, a list of the nodes which haven't been explored and a list of every node
+        List<GameObject> currentObjects = new List<GameObject> { gameObject }, checkObjects = new List<GameObject>(), everything = currentObjects;
+        everything.AddRange(initialList);
+
+        // define the object to return
+        GameObject returnObject = gameObject;
+
+        if (!neutral && playerTeam == redTeam)
+        {
+            // loop through each neighbouring node and puts them into the checkObjects script so a random one can be selected
+            foreach (GameObject neighbour in neighbours)
+            {
+                // if it hasn't been explored previously, add it into the list of possible nodes the explore and isn't a root of the same team as the the current node
+                if (!initialList.Contains(neighbour) && !(neighbour.GetComponent<Node>().getType() == "root node" && neighbour.GetComponent<Node>().sameTeam(redTeam)))
+                {
+                    checkObjects.Add(neighbour);
+                }
+            }
+            // once a list of possible nodes is created, select a random one and explore it
+            if (checkObjects.Count > 0)
+            {
+                Node nextCheck = checkObjects[Random.Range(0, checkObjects.Count)].GetComponent<Node>();
+                everything.Add(nextCheck.gameObject);
+                returnObject = nextCheck.returnRandomNeigbour(everything, playerTeam);
+            }
+        }
+        return returnObject;
+    }
+
+    public void createKnight()
+    {
+        player.sendArmy(name, returnRandomNeigbour(new List<GameObject>(), false).name, knightStrength, false, true, true);
     }
 }

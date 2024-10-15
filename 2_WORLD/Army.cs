@@ -6,13 +6,17 @@ using Photon.Pun;
 
 public class Army : MonoBehaviour
 {
-    private bool moving, disappearing, redTeam, singlePlayer;
+    private bool moving, disappearing, redteam, singlePlayer, transformed;
 
-    private int manpower, index = -1;
+    [SerializeField]
+    private int manpower, index = -1, shieldAmount;
 
-    private float speed, timeCumulation = 0;
+    private float speed, counter;
 
     private string potion;
+
+    [SerializeField]
+    private float potionDuration;
 
     [SerializeField]
     private SpriteRenderer renderer;
@@ -22,7 +26,10 @@ public class Army : MonoBehaviour
 
     private Player player;
 
-    private GameObject start, target, next;
+    private GameObject start, target, next, prev;
+
+    [SerializeField]
+    private edges currentEdge;
 
     private List<(GameObject, int)> path;
 
@@ -41,11 +48,13 @@ public class Army : MonoBehaviour
         armyText.text = manpower.ToString();
         if (moving)
         {
+            counter += Time.deltaTime;
+
             //move towards the next node
             transform.position = Vector3.MoveTowards(transform.position, next.transform.position, speed * Time.deltaTime);
 
             //calculating time before reaching target (distance/speed)
-            if (path[path.Count - 1].Item1 == next && (next.transform.position - transform.position).magnitude / speed < 0.4f && !disappearing)
+            if (next == target && (next.transform.position - transform.position).magnitude / speed < 0.4f && !disappearing)
             {
                 disappearing = true;
                 StartCoroutine(disappear());
@@ -57,12 +66,18 @@ public class Army : MonoBehaviour
                 moving = false;
                 nextNode();
             }
+
+            if (currentEdge.returnGold())
+            {
+                turnIntoEnemy();
+            }
         }
     }
 
     public void nextNode()
     {
         //determines the next node and the speed required to reach it within the specific time limit
+        counter = 0;
         index++;
         if(index < path.Count)
         {
@@ -83,20 +98,72 @@ public class Army : MonoBehaviour
             transform.rotation = Quaternion.Euler(0f, 0f, -angle);
             moving = true;
             next = path[index].Item1;
+            if(index == 0)
+            {
+                prev = start;
+            }
+            else
+            {
+                prev = path[index - 1].Item1;
+            }
+            currentEdge = prev.GetComponent<Node>().returnPath(next);
         }
     }
 
     public bool getTeam()
     {
-        return player.getTeam();
+        return redteam;
     }
 
     public void adjustManpower(int amount)
     {
-        manpower -= amount;
+        Debug.Log("adjusting");
+        int actualAmount = amount;
+        if (shieldAmount > 0)
+        {
+            if(shieldAmount > actualAmount)
+            {
+                shieldAmount -= actualAmount;
+                actualAmount = 0;
+            }
+            else
+            {
+                actualAmount -= shieldAmount;
+                shieldAmount = 0;
+            }
+        }
+        manpower -= actualAmount;
         if(manpower <= 0)
         {
             Destroy(gameObject, 0.01f);
+        }
+    }
+
+    public void turnIntoEnemy()
+    {
+        if (redteam)
+        {
+            transformed = true;
+            redteam = false;
+            renderer.sprite = blueSprite;
+            next = prev;
+            target = next;
+            Vector2 direction = next.transform.position - transform.position;
+            float distance = direction.magnitude;
+            float time = counter;
+            if (potion == "HASTE")
+            {
+                time /= 2;
+            }
+            speed = distance / time;
+            if (speed < 0.5f)
+            {
+                speed = 0.5f;
+            }
+            //conversion of the angle from radians to degrees
+            float angle = Mathf.Atan2(direction.x, direction.y) * Mathf.Rad2Deg;
+            transform.rotation = Quaternion.Euler(0f, 0f, -angle);
+            moving = true;
         }
     }
 
@@ -113,19 +180,24 @@ public class Army : MonoBehaviour
         start = GameObject.Find(startParam);
         target = GameObject.Find(targetParam);
         manager = GameObject.FindGameObjectWithTag("MANAGER").GetComponent<Manager>();
+        prev = start;
         singlePlayer = isSingle;
         manpower = manpowerParam;
-        path = manager.d_Algorithm(start, target);
+        path = manager.d_Algorithm(start, target, redParam);
         transform.position = start.transform.position;
-        redTeam = redParam;
+        redteam = redParam;
         potion = potionArg;
-        if (redTeam)
+        if (redteam)
         {
             renderer.sprite = redSprite;
         }
         else
         {
             renderer.sprite = blueSprite;
+        }
+        if(potion == "SHIELD")
+        {
+            shieldAmount = 20;
         }
         StartCoroutine(appear());
         nextNode();
@@ -149,23 +221,38 @@ public class Army : MonoBehaviour
         yield return new WaitForSeconds(0.5f);
         if (singlePlayer)
         {
-            target.GetComponent<Node>().modifyManPower(manpower, true, redTeam);
+            target.GetComponent<Node>().modifyManPower(manpower, true, redteam, transformed);
+            if (potion == "PRODUCE")
+            {
+                player.productionPotion(target.name, potionDuration);
+            }
         }
         else
         {
             PhotonView playerView = player.GetComponent<PhotonView>();
-            playerView.RPC("modifyManpower", RpcTarget.AllBuffered, target.name, manpower, true, redTeam);
+            if (playerView.IsMine)
+            {
+                playerView.RPC("modifyManpower", RpcTarget.AllBuffered, target.name, manpower, true, redteam);
+            }
+            if(potion == "PRODUCE")
+            {
+                playerView.RPC("productionPotion", RpcTarget.AllBuffered, target.name, potionDuration);
+            }
         }
         Destroy(gameObject);
     }
 
     private void OnTriggerEnter2D(Collider2D collision)
     {
-        if (collision.CompareTag("ARMY"))
+        // check collisions for a single team only (as collisions only occur when opposing teams collide, to ensure the values are correct only have this function called once)
+        if (collision.CompareTag("ARMY") && redteam)
         {
-            if(collision.GetComponent<Army>().getTeam() == player.getTeam())
+            Debug.Log("Collided");
+            if(redteam != collision.GetComponent<Army>().redteam)
             {
-                adjustManpower(collision.GetComponent<Army>().getManpower());
+                int enemyManpower = collision.GetComponent<Army>().getManpower();
+                collision.GetComponent<Army>().adjustManpower(manpower);
+                adjustManpower(enemyManpower);
             }
         }
     }

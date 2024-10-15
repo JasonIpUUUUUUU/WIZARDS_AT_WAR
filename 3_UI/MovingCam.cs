@@ -7,7 +7,7 @@ public class MovingCam : MonoBehaviour
 {
     //forcedMoving is true when the player clicks onto a node and the camera is moved towards it
     [SerializeField]
-    private bool forcedMoving, canMove;
+    private bool forcedMoving, canMove, gameStopped;
 
     private int orientation = 1;
 
@@ -69,6 +69,14 @@ public class MovingCam : MonoBehaviour
         }
     }
 
+    public void returnToDefault()
+    {
+        gameStopped = true;
+        transform.position = Vector3.zero;
+        cam.orthographicSize = 10;
+        canMove = false;
+    }
+
     //it returns true if any directional key is pressed
     bool checkInputs()
     {
@@ -93,7 +101,7 @@ public class MovingCam : MonoBehaviour
                 interruptMove();
             }
         }
-        else if(checkInputs())
+        else if(checkInputs() && !gameStopped)
         {
             canMove = true;
         }

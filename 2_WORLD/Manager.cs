@@ -1,23 +1,39 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using TMPro;
 using Photon.Pun;
+using UnityEngine.SceneManagement;
 
-public class Manager : MonoBehaviour
+public class Manager : MonoBehaviourPunCallbacks
 {
+    [SerializeField]
+    private int rootStartIndex = 0;
+
     [SerializeField]
     private int[] neighbourCount, neigbours, distances;
 
     [SerializeField]
-    private Vector2[] spawnPositions;
+    private float timer, moneySpeed;
 
-    public List<GameObject> nodes;
+    private bool won;
 
     [SerializeField]
-    private GameObject edge, node, player;
+    private Vector2[] spawnPositions;
+
+    public List<GameObject> nodes, edgesList;
+
+    [SerializeField]
+    private GameObject edge, node, player, winScreen, whiteScreen;
 
     [SerializeField]
     private Transform map;
+
+    [SerializeField]
+    private CanvasGroup winAlpha;
+
+    [SerializeField]
+    private TextMeshProUGUI winText, winMoney;
 
     private PhotonView view;
 
@@ -26,21 +42,22 @@ public class Manager : MonoBehaviour
     {
         view = GetComponent<PhotonView>();
         player = GameObject.FindGameObjectWithTag("PLAYER");
-        if (player.GetComponent<Player>().isSinglePlayer())
+        spawnNodes();
+    }
+
+    private void Update()
+    {
+        if (!won)
         {
-            Debug.Log("started");
-            spawnNodes();
-        }
-        else if (view.IsMine)
-        {
-            Debug.Log("started2");
-            view.RPC("spawnNodes", RpcTarget.AllBuffered);
+            timer += Time.deltaTime;
         }
     }
 
     [PunRPC]
     public void spawnNodes()
     {
+        bool isSingle = player.GetComponent<Player>().isSinglePlayer();
+        PhotonView playerView = player.GetComponent<PhotonView>();
         // firstly it spawn the nodes onto the map at the specified positions and sets its parent to the map
         for (int i = 0; i < spawnPositions.Length; i++)
         {
@@ -48,15 +65,31 @@ public class Manager : MonoBehaviour
             tempNode.transform.position = spawnPositions[i];
             tempNode.name = "node" + i.ToString();
             nodes.Add(tempNode);
-            if (i == 0)
+            if (i == rootStartIndex)
             {
-                tempNode.GetComponent<Node>().changeState("blue");
-                tempNode.GetComponent<Node>().changeState("root");
+                if (isSingle)
+                {
+                    tempNode.GetComponent<Node>().changeState("blue");
+                    tempNode.GetComponent<Node>().changeState("boss");
+                }
+                else if (view.IsMine)
+                {
+                    playerView.RPC("changeNodeState", RpcTarget.AllBuffered, tempNode.name, "blue");
+                    playerView.RPC("changeNodeState", RpcTarget.AllBuffered, tempNode.name, "root");
+                }
             }
             else if (i == spawnPositions.Length - 1)
             {
-                tempNode.GetComponent<Node>().changeState("red");
-                tempNode.GetComponent<Node>().changeState("root");
+                if (isSingle)
+                {
+                    tempNode.GetComponent<Node>().changeState("red");
+                    tempNode.GetComponent<Node>().changeState("root");
+                }
+                else if (view.IsMine)
+                {
+                    playerView.RPC("changeNodeState", RpcTarget.AllBuffered, tempNode.name, "red");
+                    playerView.RPC("changeNodeState", RpcTarget.AllBuffered, tempNode.name, "root");
+                }
             }
         }
         //then it assigns the neighbours to each of the nodes and creates paths between them
@@ -69,6 +102,7 @@ public class Manager : MonoBehaviour
                 Vector2 startPoint = nodes[i].transform.position;
                 Vector2 endPoint = nodes[neigbours[currentNeighbour]].transform.position;
                 tempPath = Instantiate(edge);
+                tempPath.name = "path" + (x + i).ToString();
                 tempPath.transform.position = Vector3.zero;
                 //set the starting and end point of the line so it connects the two ndoes
                 tempPath.GetComponent<edges>().setLine(startPoint, endPoint);
@@ -77,13 +111,14 @@ public class Manager : MonoBehaviour
                 //add the neighbour node into the neighbour list of the node it is referencing.
                 nodes[i].GetComponent<Node>().addNeighbour(nodes[neigbours[currentNeighbour]], tempPath, distances[currentNeighbour], true);
                 currentNeighbour++;
+                edgesList.Add(tempPath);
             }
         }
     }
 
     // This function returns a list of tuples with the first variable being the node and the second being the distance to said node, this selects the optimal path via dijkstra's algorithm
     // it takes the starting node and target node as parameters
-    public List<(GameObject, int)> d_Algorithm(GameObject start, GameObject target)
+    public List<(GameObject, int)> d_Algorithm(GameObject start, GameObject target, bool redTeamParam)
     {
         // the list of nodes for the optimal path
         List<GameObject> path = new List<GameObject>();
@@ -151,7 +186,7 @@ public class Manager : MonoBehaviour
             for(int i = 0; i < nodeScript.neighbours.Count; i++)
             {
                 // Skip visited nodes and nodes not on the same team (except the target node)
-                if (visited.Contains(nodeScript.neighbours[i]) || (!nodeScript.sameTeam() && nodeScript.gameObject != target))
+                if (visited.Contains(nodeScript.neighbours[i]) || (!nodeScript.sameTeam(redTeamParam) && nodeScript.gameObject != target))
                 {
                     continue;
                 }
@@ -187,8 +222,92 @@ public class Manager : MonoBehaviour
         return output;
     }
 
-    public void win()
+    // method activates when one player wins
+    public void win(bool redTeamParam)
     {
-        Debug.Log("win");
+        player.GetComponent<Player>().gameEnded();
+        won = true;
+        StartCoroutine(winCoroutine(redTeamParam == player.GetComponent<Player>().getTeam()));
+    }
+
+    public bool hasWon()
+    {
+        return won;
+    }
+
+    IEnumerator winCoroutine(bool win)
+    {
+        int winAmount = Mathf.RoundToInt(timer / 5 * Random.Range(0.75f, 1.5f));
+        PlayerPrefs.SetInt("MONEY", PlayerPrefs.GetInt("MONEY") + winAmount);
+        // shows and hides a white screen for dramatic effect
+        whiteScreen.SetActive(true);
+        float duration = 2f, elapsedTime = 0f;
+        while(elapsedTime < duration)
+        {
+            winAlpha.alpha = elapsedTime / duration;
+            elapsedTime += Time.deltaTime;
+            yield return null;
+        }
+        // finds the camera and locks it
+        GameObject.FindGameObjectWithTag("CAMHOLDER").GetComponent<MovingCam>().returnToDefault();
+        winScreen.SetActive(true);
+        // adjusts the text so it displays a message for the winning/losing player
+        if (win)
+        {
+            winText.text = "YOU WIN";
+        }
+        else
+        {
+            // do not show gain in money for losing team as they won't gain money
+            winText.text = "DEFEATED";
+        }
+        duration /= 2;
+        elapsedTime = 0;
+        while (elapsedTime < duration)
+        {
+            winAlpha.alpha = 1 - elapsedTime / duration;
+            elapsedTime += Time.deltaTime;
+            yield return null;
+        }
+        whiteScreen.SetActive(false);
+        if (win)
+        {
+            winMoney.gameObject.SetActive(true);
+            float showAmount = 0;
+            while(showAmount < winAmount)
+            {
+                winMoney.text = "+" + Mathf.RoundToInt(showAmount) + "$";
+                showAmount += Time.deltaTime * moneySpeed;
+                yield return null;
+            }
+        }
+    }
+
+    public void turnPathGold()
+    {
+        int randoIndex = Random.Range(0, edgesList.Count);
+        edgesList[randoIndex].GetComponent<edges>().turnGold();
+    }
+
+    public Node returnRandomValidNode()
+    {
+        return null;
+    }
+
+    public void returnMenu()
+    {
+        if (player.GetComponent<Player>().isSinglePlayer())
+        {
+            SceneManager.LoadScene("Menu");
+        }
+        else
+        {
+            PhotonNetwork.LeaveRoom();
+        }
+    }
+
+    public override void OnLeftRoom()
+    {
+        SceneManager.LoadScene("Menu");
     }
 }

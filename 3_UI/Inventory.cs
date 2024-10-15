@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 
 public class Inventory : MonoBehaviour
 {
@@ -21,6 +22,9 @@ public class Inventory : MonoBehaviour
 
     [SerializeField]
     private Image[] slotImages;
+
+    [SerializeField]
+    private TextMeshProUGUI[] slotTexts;
 
     private List<GameObject> currentPotions = new List<GameObject>();
 
@@ -57,7 +61,7 @@ public class Inventory : MonoBehaviour
                 potion.transform.position += (secondPos.position - firstPos.position) * potionNum;
                 potionNum++;
                 // set the details of the potion
-                potion.GetComponent<potionInventoryObj>().setPotion(potions[i]);
+                potion.GetComponent<potionInventoryObj>().setPotion(potions[i], this, getDescription(potions[i]));
             }
         }
     }
@@ -73,7 +77,6 @@ public class Inventory : MonoBehaviour
                 PlayerPrefs.SetString(equippedSlot, "");
             }
             string slotName = "SLOT" + currentSlot.ToString();
-            Debug.Log(slotName);
             PlayerPrefs.SetString(slotName, potion);
         }
         showPotions();
@@ -121,20 +124,36 @@ public class Inventory : MonoBehaviour
             if(PlayerPrefs.GetString("SLOT0") == potions[i])
             {
                 slotImages[0].sprite = potionSprites[i];
+                slotTexts[0].text = getDescription(potions[i]);
             }
             if (PlayerPrefs.GetString("SLOT1") == potions[i])
             {
                 slotImages[1].sprite = potionSprites[i];
+                slotTexts[1].text = getDescription(potions[i]);
             }
             if (PlayerPrefs.GetString("SLOT2") == potions[i])
             {
                 slotImages[2].sprite = potionSprites[i];
+                slotTexts[2].text = getDescription(potions[i]);
             }
         }
     }
 
     public string getDescription(string potionName)
     {
-        return potionName;
+        string description = "";
+        switch (potionName)
+        {
+            case "HASTE":
+                description = "Speed potion: doubles movement speed of army when used until the army reaches its destination";
+                break;
+            case "PRODUCE":
+                description = "Production potion: the node this army arrives to produces manpower at double the rate for the next 10 seconds";
+                break;
+            case "SHIELD":
+                description = "Shield potion: protects the attached army from 20 points of damage from any sources";
+                break;
+        }
+        return description;
     }
 }

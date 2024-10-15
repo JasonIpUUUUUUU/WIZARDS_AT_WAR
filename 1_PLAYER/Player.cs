@@ -30,17 +30,18 @@ public class Player : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        // checks if the player is playing singleplayer move
         isSingle = PlayerPrefs.GetInt("SINGLE") == 1;
         view = GetComponent<PhotonView>();
         if (view)
         {
             if (!isSingle && view.IsMine)
             {
-                redTeam = true;
+                redTeam = false;
             }
             else
             {
-                redTeam = false;
+                redTeam = true;
             }
         }
         manager = GameObject.FindGameObjectWithTag("MANAGER").GetComponent<Manager>();
@@ -87,21 +88,22 @@ public class Player : MonoBehaviour
         Destroy(current_UI, 0.5f);
     }
 
+    // this selects and displays all valid nodes
     public void selectNodesToSend(int manPower)
     {
-        Debug.Log("selecting");
         sendManPower = manPower;
         sending = true;
         selectedNode = node;
         validNodes = selectedNode.GetComponent<Node>().returnAllNeigbours(new List<GameObject>(), redTeam);
         validNodes.RemoveAll(obj => obj == selectedNode);
-        foreach(GameObject nodeArg in validNodes)
+        foreach (GameObject nodeArg in validNodes)
         {
             nodeArg.GetComponent<Node>().showShadow(true);
         }
         StartCoroutine(hideUI());
     }
 
+    // this is to cancel sending
     public void cancelSend()
     {
         selectedNode.GetComponent<Node>().spinShow(false);
@@ -119,9 +121,9 @@ public class Player : MonoBehaviour
     {
         if (sending)
         {
-            foreach(GameObject neighbour in neighbours)
+            foreach (GameObject neighbour in neighbours)
             {
-                if(!validNodes.Contains(neighbour) && neighbour != selectedNode)
+                if (!validNodes.Contains(neighbour) && neighbour != selectedNode)
                 {
                     validNodes.Add(neighbour);
                     neighbour.GetComponent<Node>().showShadow(true);
@@ -178,6 +180,14 @@ public class Player : MonoBehaviour
         }
     }
 
+    public void gameEnded()
+    {
+        if (showing)
+        {
+            StartCoroutine(hideUI());
+        }
+    }
+
     public bool getTeam()
     {
         return redTeam;
@@ -190,26 +200,39 @@ public class Player : MonoBehaviour
         {
             if (isSingle)
             {
-                sendArmy(nodeArg.name);
+                sendArmy(selectedNode.name, nodeName, sendManPower, redTeam, isSingle, false);
             }
             else
             {
-                view.RPC("sendArmy", RpcTarget.AllBuffered, nodeArg.name);
+                view.RPC("sendArmy", RpcTarget.AllBuffered, selectedNode.name, nodeName, sendManPower, redTeam, isSingle, false);
             }
         }
     }
 
     [PunRPC]
-    public void sendArmy(string nodeName)
+    public void sendArmy(string selectedNodeParam, string nodeName, int sendManPowerParam, bool redTeamParam, bool singleParam, bool bossParam)
     {
-        GameObject sendArmy = Instantiate(army);
-        sendArmy.transform.position = selectedNode.transform.position;
-        sendArmy.GetComponent<Army>().assignValues(selectedNode.name, nodeName, sendManPower, redTeam, selectedNode.GetComponent<Node>().usePotion(), isSingle);
-        if (isSingle)
+        // prevents armies from being sent when the player wins
+        if (!manager.hasWon())
         {
-            selectedNode.GetComponent<Node>().modifyManPower(sendManPower, false, redTeam);
+            GameObject sendArmy = Instantiate(army);
+            GameObject nodeActual = GameObject.Find(selectedNodeParam);
+            sendArmy.transform.position = nodeActual.transform.position;
+            sendArmy.GetComponent<Army>().assignValues(selectedNodeParam, nodeName, sendManPowerParam, redTeamParam, nodeActual.GetComponent<Node>().usePotion(), singleParam);
+            if (!bossParam)
+            {
+                if (isSingle)
+                {
+                    selectedNode.GetComponent<Node>().modifyManPower(sendManPower, false, redTeam);
+                    cancelSend();
+                }
+                else if (view.IsMine)
+                {
+                    view.RPC("modifyManpower", RpcTarget.AllBuffered, selectedNodeParam, sendManPowerParam, false, redTeamParam);
+                    cancelSend();
+                }
+            }
         }
-        cancelSend();
     }
 
     [PunRPC]
@@ -217,5 +240,26 @@ public class Player : MonoBehaviour
     {
         GameObject node = GameObject.Find(nodeName);
         node.GetComponent<Node>().modifyManPower(amount, add, red);
+    }
+
+    [PunRPC]
+    public void changeNodeState(string nodeName, string state)
+    {
+        GameObject node = GameObject.Find(nodeName);
+        node.GetComponent<Node>().changeState(state);
+    }
+
+    [PunRPC]
+    public void increaseProductionLevel(string nodeName)
+    {
+        GameObject node = GameObject.Find(nodeName);
+        node.GetComponent<Node>().increaseProductionLevel();
+    }
+
+    [PunRPC]
+    public void productionPotion(string nodeName, float duration)
+    {
+        GameObject node = GameObject.Find(nodeName);
+        StartCoroutine(node.GetComponent<Node>().tempIncreaseProduction(duration));
     }
 }
