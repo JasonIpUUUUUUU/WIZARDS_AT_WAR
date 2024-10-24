@@ -39,10 +39,17 @@ public class ConnectToServer : MonoBehaviourPunCallbacks
 
     void Start()
     {
-        connectedMaster = false;
-        PhotonNetwork.GameVersion = gameVersion;
-        // function used to connect to the network
-        PhotonNetwork.ConnectUsingSettings();
+        if (!PhotonNetwork.IsConnected)
+        {
+            connectedMaster = false;
+            PhotonNetwork.GameVersion = gameVersion;
+            // function used to connect to the network
+            PhotonNetwork.ConnectUsingSettings();
+        }
+        else
+        {
+            loadingCanvas.gameObject.SetActive(false);
+        }
     }
 
     // this is to make the illusion of a progress bar when connecting to the server so the player feels like something is happening

@@ -217,18 +217,24 @@ public class Player : MonoBehaviour
         {
             GameObject sendArmy = Instantiate(army);
             GameObject nodeActual = GameObject.Find(selectedNodeParam);
+            int tempSendManPower = sendManPowerParam;
+            // ensures a singleplayer enemy doesn't follow this rule
+            if(sendManPowerParam > nodeActual.GetComponent<Node>().returnManpower() && !(isSingle && nodeActual.GetComponent<Node>().sameTeam(false)))
+            {
+                tempSendManPower = nodeActual.GetComponent<Node>().returnManpower();
+            }
             sendArmy.transform.position = nodeActual.transform.position;
-            sendArmy.GetComponent<Army>().assignValues(selectedNodeParam, nodeName, sendManPowerParam, redTeamParam, nodeActual.GetComponent<Node>().usePotion(), singleParam);
+            sendArmy.GetComponent<Army>().assignValues(selectedNodeParam, nodeName, tempSendManPower, redTeamParam, nodeActual.GetComponent<Node>().usePotion(), singleParam);
             if (!bossParam)
             {
                 if (isSingle)
                 {
-                    selectedNode.GetComponent<Node>().modifyManPower(sendManPower, false, redTeam);
+                    selectedNode.GetComponent<Node>().modifyManPower(tempSendManPower, false, redTeam);
                     cancelSend();
                 }
                 else if (view.IsMine)
                 {
-                    view.RPC("modifyManpower", RpcTarget.AllBuffered, selectedNodeParam, sendManPowerParam, false, redTeamParam);
+                    view.RPC("modifyManpower", RpcTarget.AllBuffered, selectedNodeParam, tempSendManPower, false, redTeamParam);
                     cancelSend();
                 }
             }

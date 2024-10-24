@@ -11,6 +11,7 @@ public class Army : MonoBehaviour
     [SerializeField]
     private int manpower, index = -1, shieldAmount;
 
+    [SerializeField]
     private float speed, counter;
 
     private string potion;
@@ -26,6 +27,7 @@ public class Army : MonoBehaviour
 
     private Player player;
 
+    [SerializeField]
     private GameObject start, target, next, prev;
 
     [SerializeField]
@@ -54,7 +56,7 @@ public class Army : MonoBehaviour
             transform.position = Vector3.MoveTowards(transform.position, next.transform.position, speed * Time.deltaTime);
 
             //calculating time before reaching target (distance/speed)
-            if (next == target && (next.transform.position - transform.position).magnitude / speed < 0.4f && !disappearing)
+            if ((!next.GetComponent<Node>().sameTeam(redteam) || next == target) && (next.transform.position - transform.position).magnitude / speed < 0.4f && !disappearing)
             {
                 disappearing = true;
                 StartCoroutine(disappear());
@@ -76,37 +78,39 @@ public class Army : MonoBehaviour
 
     public void nextNode()
     {
-        //determines the next node and the speed required to reach it within the specific time limit
-        counter = 0;
-        index++;
-        if(index < path.Count)
+        if (!disappearing)
         {
-            //this shows the distance between the node and the army in a vector format
-            Vector2 direction = path[index].Item1.transform.position - transform.position;
+            //determines the next node and the speed required to reach it within the specific time limit
+            counter = 0;
+            index++;
+            if (index < path.Count)
+            {
+                //this shows the distance between the node and the army in a vector format
+                Vector2 direction = path[index].Item1.transform.position - transform.position;
 
-            //speed = distance/time, the path[index].Item2 stores time needed to reach from the starting node so it is necessary to deduct it by the cumulation of time taken to reach previous nodes.
-            float distance = direction.magnitude;
-            float time = path[index].Item2;
-            if(potion == "HASTE")
-            {
-                Debug.Log("fast");
-                time /= 2;
+                //speed = distance/time, the path[index].Item2 stores time needed to reach from the starting node so it is necessary to deduct it by the cumulation of time taken to reach previous nodes.
+                float distance = direction.magnitude;
+                float time = path[index].Item2;
+                if (potion == "HASTE")
+                {
+                    time /= 2;
+                }
+                speed = distance / time;
+                //conversion of the angle from radians to degrees
+                float angle = Mathf.Atan2(direction.x, direction.y) * Mathf.Rad2Deg;
+                transform.rotation = Quaternion.Euler(0f, 0f, -angle);
+                moving = true;
+                next = path[index].Item1;
+                if (index == 0)
+                {
+                    prev = start;
+                }
+                else
+                {
+                    prev = path[index - 1].Item1;
+                }
+                currentEdge = prev.GetComponent<Node>().returnPath(next);
             }
-            speed = distance / time;
-            //conversion of the angle from radians to degrees
-            float angle = Mathf.Atan2(direction.x, direction.y) * Mathf.Rad2Deg;
-            transform.rotation = Quaternion.Euler(0f, 0f, -angle);
-            moving = true;
-            next = path[index].Item1;
-            if(index == 0)
-            {
-                prev = start;
-            }
-            else
-            {
-                prev = path[index - 1].Item1;
-            }
-            currentEdge = prev.GetComponent<Node>().returnPath(next);
         }
     }
 
@@ -156,9 +160,9 @@ public class Army : MonoBehaviour
                 time /= 2;
             }
             speed = distance / time;
-            if (speed < 0.5f)
+            if (float.IsNaN(speed))
             {
-                speed = 0.5f;
+                speed = 0.1f;
             }
             //conversion of the angle from radians to degrees
             float angle = Mathf.Atan2(direction.x, direction.y) * Mathf.Rad2Deg;
@@ -221,10 +225,10 @@ public class Army : MonoBehaviour
         yield return new WaitForSeconds(0.5f);
         if (singlePlayer)
         {
-            target.GetComponent<Node>().modifyManPower(manpower, true, redteam, transformed);
+            next.GetComponent<Node>().modifyManPower(manpower, true, redteam, transformed);
             if (potion == "PRODUCE")
             {
-                player.productionPotion(target.name, potionDuration);
+                player.productionPotion(next.name, potionDuration);
             }
         }
         else

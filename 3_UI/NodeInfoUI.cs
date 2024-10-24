@@ -112,7 +112,6 @@ public class NodeInfoUI : MonoBehaviour
                 }
                 if (Input.GetKeyDown(KeyCode.E))
                 {
-                    Debug.Log(manpower);
                     slider.value += 1f / manpower;
                 }
                 if (Input.GetKeyDown(KeyCode.Q))

@@ -237,8 +237,9 @@ public class Manager : MonoBehaviourPunCallbacks
 
     IEnumerator winCoroutine(bool win)
     {
+
         int winAmount = Mathf.RoundToInt(timer / 5 * Random.Range(0.75f, 1.5f));
-        PlayerPrefs.SetInt("MONEY", PlayerPrefs.GetInt("MONEY") + winAmount);
+        won = true;
         // shows and hides a white screen for dramatic effect
         whiteScreen.SetActive(true);
         float duration = 2f, elapsedTime = 0f;
@@ -254,6 +255,7 @@ public class Manager : MonoBehaviourPunCallbacks
         // adjusts the text so it displays a message for the winning/losing player
         if (win)
         {
+            PlayerPrefs.SetInt("MONEY", PlayerPrefs.GetInt("MONEY") + winAmount);
             winText.text = "YOU WIN";
         }
         else
@@ -303,6 +305,34 @@ public class Manager : MonoBehaviourPunCallbacks
         else
         {
             PhotonNetwork.LeaveRoom();
+        }
+    }
+
+    public void makeRoyalNodes()
+    {
+        foreach (GameObject node in nodes)
+        {
+            Node nodeScript = node.GetComponent<Node>();
+            if (nodeScript.getType() == "boss")
+            {
+                nodeScript.changeState("production");
+                nodeScript.setKnightStrength(20, 10, 25);
+                nodeScript.createKnight();
+            }
+            else if (nodeScript.getType() == "knight")
+            {
+                Debug.Log("knight");
+                nodeScript.setKnightStrength(10, 10, 15);
+                nodeScript.createKnight();
+            }
+            else if (nodeScript.isNeutral() || nodeScript.sameTeam(false))
+            {
+                nodeScript.setKnightStrength(10, 10, 15);
+                nodeScript.changeState("blue");
+                nodeScript.changeState("knight");
+                nodeScript.modifyManPower(50, true, false);
+                nodeScript.createKnight();
+            }
         }
     }
 

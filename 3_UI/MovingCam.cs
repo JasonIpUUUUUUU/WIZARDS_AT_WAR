@@ -117,7 +117,7 @@ public class MovingCam : MonoBehaviour
             //Mathf.Clamp(target, min, max) essentially clamps the target variable so it is always between min and max
             Camera.main.orthographicSize = Mathf.Clamp(Camera.main.orthographicSize - Input.mouseScrollDelta.y, minSize, maxSize);
             //this ensures when it detects the camera zooming in, it moves the camera towards the mouse and the opposite as well
-            transform.position = mousePosition + (transform.position - mousePosition) * (Camera.main.orthographicSize / oldOrthographicSize);
+            transform.position = (Vector2) (mousePosition + (transform.position - mousePosition) * (Camera.main.orthographicSize / oldOrthographicSize));
         }
     }
 

@@ -15,7 +15,7 @@ public class Node : MonoBehaviour
     private BossBehaviour bossScript;
 
     [SerializeField]
-    private bool isRoot, productionNode, redTeam, neutral, producing, selecting, hasPotion, makingPotion, knight;
+    private bool isRoot, productionNode, redTeam, neutral, producing, selecting, hasPotion, makingPotion, knight, phase2, isBoss;
 
     private string potion;
 
@@ -258,11 +258,19 @@ public class Node : MonoBehaviour
 
     public string getType()
     {
-        if (isRoot)
+        if (isBoss)
+        {
+            return "boss";
+        }
+        else if (isRoot)
         {
             return "root node";
         }
-        if (producing)
+        else if (knight)
+        {
+            return "knight";
+        }
+        else if (producing)
         {
             return "production node";
         }
@@ -375,34 +383,42 @@ public class Node : MonoBehaviour
             manPower -= amount;
             if (manPower < 0)
             {
-                manPower *= -1;
-                if (redTeam)
+                if(isBoss && !phase2)
                 {
-                    if (player.isSinglePlayer())
-                    {
-                        changeState("blue");
-                        if (transformed)
-                        {
-                            knightMin = 6;
-                            knightMax = 20;
-                            knightStrength = 10;
-                            changeState("knight");
-                        }
-                    }
-                    else if (playerView.IsMine)
-                    {
-                        playerView.RPC("changeNodeState", RpcTarget.AllBuffered, name, "blue");
-                    }
+                    phase2 = true;
+                    changeState("boss2");
                 }
                 else
                 {
-                    if (player.isSinglePlayer())
+                    manPower *= -1;
+                    if (redTeam)
                     {
-                        changeState("red");
+                        if (player.isSinglePlayer())
+                        {
+                            changeState("blue");
+                            if (transformed)
+                            {
+                                knightMin = 6;
+                                knightMax = 20;
+                                knightStrength = 10;
+                                changeState("knight");
+                            }
+                        }
+                        else if (playerView.IsMine)
+                        {
+                            playerView.RPC("changeNodeState", RpcTarget.AllBuffered, name, "blue");
+                        }
                     }
-                    else if (playerView.IsMine)
+                    else
                     {
-                        playerView.RPC("changeNodeState", RpcTarget.AllBuffered, name, "red");
+                        if (player.isSinglePlayer())
+                        {
+                            changeState("red");
+                        }
+                        else if (playerView.IsMine)
+                        {
+                            playerView.RPC("changeNodeState", RpcTarget.AllBuffered, name, "red");
+                        }
                     }
                 }
             }
@@ -463,11 +479,17 @@ public class Node : MonoBehaviour
                 break;
             case "boss":
                 bossScript = GameObject.FindGameObjectWithTag("BOSS").GetComponent<BossBehaviour>();
+                isBoss = true;
                 // boss nodes start with a set amount of health and have to be defeated by the player in singleplayer
                 selfRenderer.color = rootColor;
                 isRoot = true;
                 // increases manpower by the health of the boss and gives a reference of this script to the boss
                 modifyManPower(bossScript.linkNode(this), true, redTeam);
+                break;
+            case "boss2":
+                // phase 2 of each boss
+                manPower = bossScript.returnMaxHealth();
+                bossScript.startPhase2();
                 break;
             case "knight":
                 knight = true;
@@ -530,6 +552,11 @@ public class Node : MonoBehaviour
 
     public void createKnight()
     {
-        player.sendArmy(name, returnRandomNeigbour(new List<GameObject>(), false).name, knightStrength, false, true, true);
+        int tempStrength = knightStrength;
+        if (bossScript.returnPhase())
+        {
+            tempStrength += Mathf.RoundToInt(manPower * 0.1f);
+        }
+        player.sendArmy(name, returnRandomNeigbour(new List<GameObject>(), false).name, tempStrength, false, true, true);
     }
 }
