@@ -9,7 +9,7 @@ public class Player : MonoBehaviour
 
     //showing refers to when the UI is shown, hiding is true when the UI is in the process of hiding and redTeam shows what team the player is in via a single variable
     [SerializeField]
-    private bool showing, hiding, redTeam, sending, isSingle;
+    private bool showing, hiding, redTeam, sending, isSingle, canInteract = true;
 
     private int sendManPower;
 
@@ -166,7 +166,7 @@ public class Player : MonoBehaviour
             }
             StartCoroutine(hideUI());
         }
-        else
+        else if (canInteract)
         {
             // if there is a node currently being selected
             if (node)
@@ -178,6 +178,11 @@ public class Player : MonoBehaviour
             cam.addPosition(node.transform.position);
             StartCoroutine(showUI());
         }
+    }
+
+    public void setInteract(bool can)
+    {
+        canInteract = can;
     }
 
     public void gameEnded()
@@ -232,7 +237,7 @@ public class Player : MonoBehaviour
                     selectedNode.GetComponent<Node>().modifyManPower(tempSendManPower, false, redTeam);
                     cancelSend();
                 }
-                else if (view.IsMine)
+                else if (redTeam == redTeamParam)
                 {
                     view.RPC("modifyManpower", RpcTarget.AllBuffered, selectedNodeParam, tempSendManPower, false, redTeamParam);
                     cancelSend();

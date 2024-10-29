@@ -479,7 +479,10 @@ public class Node : MonoBehaviour
                 break;
             case "boss":
                 bossScript = GameObject.FindGameObjectWithTag("BOSS").GetComponent<BossBehaviour>();
-                isBoss = true;
+                if(bossScript.returnBoss() != "TUTORIAL")
+                {
+                    isBoss = true;
+                }
                 // boss nodes start with a set amount of health and have to be defeated by the player in singleplayer
                 selfRenderer.color = rootColor;
                 isRoot = true;
@@ -553,7 +556,7 @@ public class Node : MonoBehaviour
     public void createKnight()
     {
         int tempStrength = knightStrength;
-        if (bossScript.returnPhase())
+        if (PlayerPrefs.GetInt("DIFFICULTY") == 3)
         {
             tempStrength += Mathf.RoundToInt(manPower * 0.1f);
         }

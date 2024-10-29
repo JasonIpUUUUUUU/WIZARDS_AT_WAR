@@ -289,6 +289,17 @@ public class Manager : MonoBehaviourPunCallbacks
     {
         int randoIndex = Random.Range(0, edgesList.Count);
         edgesList[randoIndex].GetComponent<edges>().turnGold();
+
+        // if the difficulty is 2 or above, create 2 golden paths at once
+        if (PlayerPrefs.GetInt("DIFFICULTY") >= 2)
+        {
+            int randoIndex2 = Random.Range(0, edgesList.Count);
+            while (randoIndex == randoIndex2)
+            {
+                randoIndex2 = Random.Range(0, edgesList.Count);
+            }
+            edgesList[randoIndex2].GetComponent<edges>().turnGold();
+        }
     }
 
     public Node returnRandomValidNode()
@@ -306,6 +317,11 @@ public class Manager : MonoBehaviourPunCallbacks
         {
             PhotonNetwork.LeaveRoom();
         }
+    }
+
+    public void tutorialSequence(int index)
+    {
+        GameObject.FindGameObjectWithTag("TUTORIAL").GetComponent<Tutorial>().startTutorial(index);
     }
 
     public void makeRoyalNodes()

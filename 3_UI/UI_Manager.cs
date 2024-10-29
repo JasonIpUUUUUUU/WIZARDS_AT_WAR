@@ -7,8 +7,12 @@ using TMPro;
 
 public class UI_Manager : MonoBehaviour
 {
+    private bool difficultySet = false;
     [SerializeField]
     private GameObject currentScreen;
+
+    [SerializeField]
+    private StageSelect stageSelect;
 
     [SerializeField]
     private TextMeshProUGUI moneyText, stardustText;
@@ -26,8 +30,26 @@ public class UI_Manager : MonoBehaviour
         currentScreen = screen;
     }
 
+    // sets the difficutly for the player
+    public void setDifficulty(int difficulty)
+    {
+        PlayerPrefs.SetInt("DIFFICULTY", difficulty);
+        difficultySet = true;
+    }
+
+    // calls the function to enter the stage
     public void enterStage(string stage)
     {
+        StartCoroutine(waitForDifficulty(stage));
+    }
+
+    // waits until the difficulty has been modified to switch scenes
+    private IEnumerator waitForDifficulty(string stage)
+    {
+        while (!difficultySet)
+        {
+            yield return null;
+        }
         PlayerPrefs.SetInt("SINGLE", 1);
         SceneManager.LoadScene(stage);
     }

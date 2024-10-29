@@ -7,7 +7,7 @@ public class MovingCam : MonoBehaviour
 {
     //forcedMoving is true when the player clicks onto a node and the camera is moved towards it
     [SerializeField]
-    private bool forcedMoving, canMove, gameStopped;
+    private bool forcedMoving, canMove, gameStopped, waitCam, waitZoom;
 
     private int orientation = 1;
 
@@ -20,6 +20,9 @@ public class MovingCam : MonoBehaviour
     private Camera cam;
 
     private Player player;
+
+    [SerializeField]
+    private Tutorial tutorial;
 
     // Start is called before the first frame update
     void Start()
@@ -69,6 +72,11 @@ public class MovingCam : MonoBehaviour
         }
     }
 
+    public void waitForCamMove()
+    {
+        waitCam = true;
+    }
+
     public void returnToDefault()
     {
         gameStopped = true;
@@ -95,6 +103,10 @@ public class MovingCam : MonoBehaviour
     {
         if (canMove)
         {
+            if (waitCam)
+            {
+                tutorial.camMovedFunc();
+            }
             transform.position += new Vector3(Input.GetAxis("Horizontal") * moveSpeed * Time.deltaTime, Input.GetAxis("Vertical") * moveSpeed * Time.deltaTime) * orientation;
             if (!checkInputs())
             {
@@ -125,5 +137,11 @@ public class MovingCam : MonoBehaviour
     {
         transform.position = offset - (currentMousePos - initialMousePos) * dragSpeed * orientation;
         transform.position = new Vector3(transform.position.x, transform.position.y, 0);
+    }
+
+    public void freezeCam(bool freeze)
+    {
+        gameStopped = freeze;
+        canMove = !freeze;
     }
 }

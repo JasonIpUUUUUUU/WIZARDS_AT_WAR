@@ -8,7 +8,7 @@ public class BossBehaviour : MonoBehaviour
     private string boss;
 
     [SerializeField]
-    private int maxHealth, currentHealth;
+    private int maxHealth, currentHealth, tutorialIndex;
 
     private bool phase2 = false;
 
@@ -16,6 +16,14 @@ public class BossBehaviour : MonoBehaviour
     private Manager manager;
 
     private Node rootNode;
+
+    private void Start()
+    {
+        if(boss == "TUTORIAL")
+        {
+            manager.tutorialSequence(tutorialIndex);
+        }
+    }
 
     // Update is called once per frame
     void Update()
@@ -29,6 +37,10 @@ public class BossBehaviour : MonoBehaviour
 
     public int linkNode(Node nodeParam)
     {
+        if(boss != "TUTORIAL")
+        {
+            maxHealth += PlayerPrefs.GetInt("DIFFICULTY") * 50;
+        }
         currentHealth = maxHealth;
         rootNode = nodeParam;
         return currentHealth;
@@ -47,6 +59,11 @@ public class BossBehaviour : MonoBehaviour
     public bool returnPhase()
     {
         return phase2;
+    }
+
+    public string returnBoss()
+    {
+        return boss;
     }
 
     public void win()
