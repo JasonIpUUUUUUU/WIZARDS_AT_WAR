@@ -28,10 +28,13 @@ public class BossBehaviour : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        currentHealth = rootNode.returnManpower();
-        if (manager.hasWon())
+        if (rootNode)
         {
-            win();
+            currentHealth = rootNode.returnManpower();
+            if (manager.hasWon())
+            {
+                win();
+            }
         }
     }
 
@@ -72,5 +75,10 @@ public class BossBehaviour : MonoBehaviour
         {
             GetComponent<RoyalWizard>().gameEnded();
         }
+    }
+
+    public Node returnRootNode()
+    {
+        return rootNode;
     }
 }

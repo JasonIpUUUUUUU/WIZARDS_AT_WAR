@@ -8,7 +8,7 @@ using UnityEngine.SceneManagement;
 public class Manager : MonoBehaviourPunCallbacks
 {
     [SerializeField]
-    private int rootStartIndex = 0;
+    private int rootStartIndex = 0, winAmount;
 
     [SerializeField]
     private int[] neighbourCount, neigbours, distances;
@@ -16,7 +16,8 @@ public class Manager : MonoBehaviourPunCallbacks
     [SerializeField]
     private float timer, moneySpeed;
 
-    private bool won;
+    [SerializeField]
+    private bool won, tutorialBoss, moneyFluctuate;
 
     [SerializeField]
     private Vector2[] spawnPositions;
@@ -28,6 +29,9 @@ public class Manager : MonoBehaviourPunCallbacks
 
     [SerializeField]
     private Transform map;
+
+    [SerializeField]
+    private BossBehaviour boss;
 
     [SerializeField]
     private CanvasGroup winAlpha;
@@ -237,8 +241,20 @@ public class Manager : MonoBehaviourPunCallbacks
 
     IEnumerator winCoroutine(bool win)
     {
-
-        int winAmount = Mathf.RoundToInt(timer / 5 * Random.Range(0.75f, 1.5f));
+        int winAmountTemp = 0;
+        if (tutorialBoss)
+        {
+            if(PlayerPrefs.GetInt("TUTORIAL") != 1)
+            {
+                PlayerPrefs.SetInt("TUTORIAL", 1);
+                winAmountTemp = 100;
+                moneyFluctuate = false;
+            }
+        }
+        if (moneyFluctuate)
+        {
+            winAmountTemp = Mathf.RoundToInt(winAmount * Random.Range(0.75f, 1.5f));
+        }
         won = true;
         // shows and hides a white screen for dramatic effect
         whiteScreen.SetActive(true);
@@ -272,11 +288,11 @@ public class Manager : MonoBehaviourPunCallbacks
             yield return null;
         }
         whiteScreen.SetActive(false);
-        if (win)
+        if (win && winAmountTemp > 0)
         {
             winMoney.gameObject.SetActive(true);
             float showAmount = 0;
-            while(showAmount < winAmount)
+            while(showAmount < winAmountTemp)
             {
                 winMoney.text = "+" + Mathf.RoundToInt(showAmount) + "$";
                 showAmount += Time.deltaTime * moneySpeed;
@@ -319,6 +335,11 @@ public class Manager : MonoBehaviourPunCallbacks
         }
     }
 
+    public void enterStage(string stageName)
+    {
+        SceneManager.LoadScene(stageName);
+    }
+
     public void tutorialSequence(int index)
     {
         GameObject.FindGameObjectWithTag("TUTORIAL").GetComponent<Tutorial>().startTutorial(index);
@@ -337,7 +358,6 @@ public class Manager : MonoBehaviourPunCallbacks
             }
             else if (nodeScript.getType() == "knight")
             {
-                Debug.Log("knight");
                 nodeScript.setKnightStrength(10, 10, 15);
                 nodeScript.createKnight();
             }
@@ -350,6 +370,13 @@ public class Manager : MonoBehaviourPunCallbacks
                 nodeScript.createKnight();
             }
         }
+    }
+
+    public void startTutorialBattle()
+    {
+        Node bossNode = boss.returnRootNode();
+        bossNode.startTutorialFight();
+        tutorialBoss = true;
     }
 
     public override void OnLeftRoom()

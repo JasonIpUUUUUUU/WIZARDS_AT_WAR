@@ -436,7 +436,6 @@ public class Node : MonoBehaviour
     {
         productionLevel++;
         yield return new WaitForSeconds(duration);
-        Debug.Log("revert");
         productionLevel--;
     }
 
@@ -553,6 +552,38 @@ public class Node : MonoBehaviour
         return returnObject;
     }
 
+    // a version exclusively for the tutorial to prevent the palyer from being beaten
+    public GameObject returnRandomNeigbourTutorial(List<GameObject> initialList, bool playerTeam)
+    {
+        // define initial lists such as a list of of the nodes that have been explored, a list of the nodes which haven't been explored and a list of every node
+        List<GameObject> currentObjects = new List<GameObject> { gameObject }, checkObjects = new List<GameObject>(), everything = currentObjects;
+        everything.AddRange(initialList);
+
+        // define the object to return
+        GameObject returnObject = gameObject;
+
+        if (!neutral && playerTeam == redTeam)
+        {
+            // loop through each neighbouring node and puts them into the checkObjects script so a random one can be selected
+            foreach (GameObject neighbour in neighbours)
+            {
+                // if it hasn't been explored previously, prevent armies from sending manpower to the root node
+                if (!initialList.Contains(neighbour) && neighbour.GetComponent<Node>().getType() != "root node" )
+                {
+                    checkObjects.Add(neighbour);
+                }
+            }
+            // once a list of possible nodes is created, select a random one and explore it
+            if (checkObjects.Count > 0)
+            {
+                Node nextCheck = checkObjects[Random.Range(0, checkObjects.Count)].GetComponent<Node>();
+                everything.Add(nextCheck.gameObject);
+                returnObject = nextCheck.returnRandomNeigbourTutorial(everything, playerTeam);
+            }
+        }
+        return returnObject;
+    }
+
     public void createKnight()
     {
         int tempStrength = knightStrength;
@@ -561,5 +592,17 @@ public class Node : MonoBehaviour
             tempStrength += Mathf.RoundToInt(manPower * 0.1f);
         }
         player.sendArmy(name, returnRandomNeigbour(new List<GameObject>(), false).name, tempStrength, false, true, true);
+    }
+
+    public void startTutorialFight()
+    {
+        StartCoroutine(tutorialLoop());
+    }
+
+    IEnumerator tutorialLoop()
+    {
+        player.sendArmy(name, returnRandomNeigbourTutorial(new List<GameObject>(), false).name, 1, false, true, true);
+        yield return new WaitForSeconds(2);
+        StartCoroutine(tutorialLoop());
     }
 }

@@ -77,6 +77,11 @@ public class MovingCam : MonoBehaviour
         waitCam = true;
     }
 
+    public void waitForCamScroll()
+    {
+        waitZoom = true;
+    }
+
     public void returnToDefault()
     {
         gameStopped = true;
@@ -103,13 +108,14 @@ public class MovingCam : MonoBehaviour
     {
         if (canMove)
         {
-            if (waitCam)
-            {
-                tutorial.camMovedFunc();
-            }
             transform.position += new Vector3(Input.GetAxis("Horizontal") * moveSpeed * Time.deltaTime, Input.GetAxis("Vertical") * moveSpeed * Time.deltaTime) * orientation;
+            // when inputs are detected
             if (!checkInputs())
             {
+                if (waitCam)
+                {
+                    tutorial.camMovedFunc();
+                }
                 interruptMove();
             }
         }
@@ -123,8 +129,9 @@ public class MovingCam : MonoBehaviour
     void cameraScroll()
     {
         float oldOrthographicSize = Camera.main.orthographicSize;
-        if (Input.mouseScrollDelta.y != 0)
+        if (Input.mouseScrollDelta.y != 0 && !gameStopped)
         {
+            tutorial.camScrolledFunc();
             Vector3 mousePosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
             //Mathf.Clamp(target, min, max) essentially clamps the target variable so it is always between min and max
             Camera.main.orthographicSize = Mathf.Clamp(Camera.main.orthographicSize - Input.mouseScrollDelta.y, minSize, maxSize);

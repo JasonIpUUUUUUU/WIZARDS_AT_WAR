@@ -18,6 +18,9 @@ public class ConnectToServer : MonoBehaviourPunCallbacks
     private float counter, totalLoadingTime, acceleration = 0.5f;
 
     [SerializeField]
+    private AudioSource audio;
+
+    [SerializeField]
     private CanvasGroup loadingCanvas;
 
     [SerializeField]
@@ -49,6 +52,11 @@ public class ConnectToServer : MonoBehaviourPunCallbacks
         else
         {
             loadingCanvas.gameObject.SetActive(false);
+            if(PlayerPrefs.GetInt("TUTORIAL") != 1)
+            {
+                PlayerPrefs.SetInt("SINGLE", 1);
+                SceneManager.LoadScene("TUTORIAL1");
+            }
         }
     }
 
@@ -72,8 +80,17 @@ public class ConnectToServer : MonoBehaviourPunCallbacks
         progressBar.value = counter / totalLoadingTime;
         if(counter >= totalLoadingTime && !hiding)
         {
-            StartCoroutine(hideUI());
-            hiding = true;
+            if (PlayerPrefs.GetInt("TUTORIAL") != 1)
+            {
+                PlayerPrefs.SetInt("SINGLE", 1);
+                SceneManager.LoadScene("TUTORIAL1");
+            }
+            else
+            {
+                audio.Play();
+                StartCoroutine(hideUI());
+                hiding = true;
+            }
         }
     }
 

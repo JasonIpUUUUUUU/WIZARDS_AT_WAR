@@ -9,7 +9,7 @@ public class Player : MonoBehaviour
 
     //showing refers to when the UI is shown, hiding is true when the UI is in the process of hiding and redTeam shows what team the player is in via a single variable
     [SerializeField]
-    private bool showing, hiding, redTeam, sending, isSingle, canInteract = true;
+    private bool showing, hiding, redTeam, sending, isSingle, canInteract = true, tutorialNodeRoot;
 
     private int sendManPower;
 
@@ -26,6 +26,9 @@ public class Player : MonoBehaviour
     private MovingCam cam;
 
     private PhotonView view;
+
+    [SerializeField]
+    private Tutorial tutorial;
 
     // Start is called before the first frame update
     void Start()
@@ -168,6 +171,10 @@ public class Player : MonoBehaviour
         }
         else if (canInteract)
         {
+            if(nodeArg.GetComponent<Node>().getType() == "root node" && nodeArg.GetComponent<Node>().sameTeam(redTeam) && tutorialNodeRoot)
+            {
+                tutorial.rootClicked();
+            }
             // if there is a node currently being selected
             if (node)
             {
@@ -244,6 +251,11 @@ public class Player : MonoBehaviour
                 }
             }
         }
+    }
+
+    public void readyClickRootNode()
+    {
+        tutorialNodeRoot = true;
     }
 
     [PunRPC]

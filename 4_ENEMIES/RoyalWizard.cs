@@ -30,7 +30,22 @@ public class RoyalWizard : MonoBehaviour
     {
         boss = GetComponent<BossBehaviour>();
         manager = GameObject.FindGameObjectWithTag("MANAGER").GetComponent<Manager>();
-        StartCoroutine(lateStart());
+        foreach (string nodeName in knightNodeNames)
+        {
+            Node knightNode = GameObject.Find(nodeName).GetComponent<Node>();
+            if (knightNode.getType() != "boss")
+            {
+                knightNode.setKnightStrength(10, 6, 20);
+                knightNode.changeState("blue");
+                knightNode.changeState("knight");
+                knightNode.modifyManPower(50, true, false);
+            }
+            else
+            {
+                knightNode.setKnightStrength(20, 10, 30);
+                knightNode.changeState("knight");
+            }
+        }
     }
 
     private void Update()
@@ -45,22 +60,6 @@ public class RoyalWizard : MonoBehaviour
     IEnumerator lateStart()
     {
         yield return new WaitForSeconds(0.1f);
-        foreach (string nodeName in knightNodeNames)
-        {
-            Node knightNode = GameObject.Find(nodeName).GetComponent<Node>();
-            if(knightNode.getType() != "boss")
-            {
-                knightNode.setKnightStrength(10, 6, 20);
-                knightNode.changeState("blue");
-                knightNode.changeState("knight");
-                knightNode.modifyManPower(50, true, false);
-            }
-            else
-            {
-                knightNode.setKnightStrength(20, 10, 30);
-                knightNode.changeState("knight");
-            }
-        }
         yield return new WaitForSeconds(2);
         StartCoroutine(goldenPath());
     }

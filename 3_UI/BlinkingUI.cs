@@ -9,7 +9,7 @@ public class BlinkingUI : MonoBehaviour
     void Start()
     {
         StartCoroutine(repeatBlink());
-    }
+    }  
 
     IEnumerator repeatBlink()
     {
