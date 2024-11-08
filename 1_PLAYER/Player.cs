@@ -212,17 +212,17 @@ public class Player : MonoBehaviour
         {
             if (isSingle)
             {
-                sendArmy(selectedNode.name, nodeName, sendManPower, redTeam, isSingle, false);
+                sendArmy(selectedNode.name, nodeName, sendManPower, redTeam, isSingle, false, selectedNode.GetComponent<Node>().usePotion());
             }
             else
             {
-                view.RPC("sendArmy", RpcTarget.AllBuffered, selectedNode.name, nodeName, sendManPower, redTeam, isSingle, false);
+                view.RPC("sendArmy", RpcTarget.AllBuffered, selectedNode.name, nodeName, sendManPower, redTeam, isSingle, false, selectedNode.GetComponent<Node>().usePotion());
             }
         }
     }
 
     [PunRPC]
-    public void sendArmy(string selectedNodeParam, string nodeName, int sendManPowerParam, bool redTeamParam, bool singleParam, bool bossParam)
+    public void sendArmy(string selectedNodeParam, string nodeName, int sendManPowerParam, bool redTeamParam, bool singleParam, bool bossParam, string potionParam)
     {
         // prevents armies from being sent when the player wins
         if (!manager.hasWon())
@@ -236,7 +236,7 @@ public class Player : MonoBehaviour
                 tempSendManPower = nodeActual.GetComponent<Node>().returnManpower();
             }
             sendArmy.transform.position = nodeActual.transform.position;
-            sendArmy.GetComponent<Army>().assignValues(selectedNodeParam, nodeName, tempSendManPower, redTeamParam, nodeActual.GetComponent<Node>().usePotion(), singleParam);
+            sendArmy.GetComponent<Army>().assignValues(selectedNodeParam, nodeName, tempSendManPower, redTeamParam, potionParam, singleParam);
             if (!bossParam)
             {
                 if (isSingle)

@@ -131,7 +131,10 @@ public class MovingCam : MonoBehaviour
         float oldOrthographicSize = Camera.main.orthographicSize;
         if (Input.mouseScrollDelta.y != 0 && !gameStopped)
         {
-            tutorial.camScrolledFunc();
+            if (waitZoom)
+            {
+                tutorial.camScrolledFunc();
+            }
             Vector3 mousePosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
             //Mathf.Clamp(target, min, max) essentially clamps the target variable so it is always between min and max
             Camera.main.orthographicSize = Mathf.Clamp(Camera.main.orthographicSize - Input.mouseScrollDelta.y, minSize, maxSize);

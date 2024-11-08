@@ -155,10 +155,6 @@ public class Army : MonoBehaviour
             Vector2 direction = next.transform.position - transform.position;
             float distance = direction.magnitude;
             float time = counter;
-            if (potion == "HASTE")
-            {
-                time /= 2;
-            }
             speed = distance / time;
             if (float.IsNaN(speed))
             {

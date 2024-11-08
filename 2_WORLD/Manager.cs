@@ -4,9 +4,13 @@ using UnityEngine;
 using TMPro;
 using Photon.Pun;
 using UnityEngine.SceneManagement;
+using EZCameraShake;
 
 public class Manager : MonoBehaviourPunCallbacks
 {
+    [SerializeField]
+    private string stage;
+
     [SerializeField]
     private int rootStartIndex = 0, winAmount;
 
@@ -14,10 +18,10 @@ public class Manager : MonoBehaviourPunCallbacks
     private int[] neighbourCount, neigbours, distances;
 
     [SerializeField]
-    private float timer, moneySpeed;
+    private float timer, moneySpeed, rageTime;
 
     [SerializeField]
-    private bool won, tutorialBoss, moneyFluctuate;
+    private bool won, tutorialBoss, moneyFluctuate, raging = true, single;
 
     [SerializeField]
     private Vector2[] spawnPositions;
@@ -25,7 +29,7 @@ public class Manager : MonoBehaviourPunCallbacks
     public List<GameObject> nodes, edgesList;
 
     [SerializeField]
-    private GameObject edge, node, player, winScreen, whiteScreen;
+    private GameObject edge, node, player, winScreen, whiteScreen, redTint;
 
     [SerializeField]
     private Transform map;
@@ -37,13 +41,14 @@ public class Manager : MonoBehaviourPunCallbacks
     private CanvasGroup winAlpha;
 
     [SerializeField]
-    private TextMeshProUGUI winText, winMoney;
+    private TextMeshProUGUI winText, winMoney, timeDisplay;
 
     private PhotonView view;
 
     // Start is called before the first frame update
     void Start()
     {
+        single = player.GetComponent<Player>().isSinglePlayer();
         view = GetComponent<PhotonView>();
         player = GameObject.FindGameObjectWithTag("PLAYER");
         spawnNodes();
@@ -54,7 +59,48 @@ public class Manager : MonoBehaviourPunCallbacks
         if (!won)
         {
             timer += Time.deltaTime;
+            if (!raging && player.GetComponent<Player>().isSinglePlayer())
+            {
+                timeDisplay.text  = returnTimeString(timer);
+            }
         }
+        if (player.GetComponent<Player>().isSinglePlayer() && timer > rageTime && !raging)
+        {
+            timeDisplay.text = "Boss is ANGRY";
+            timeDisplay.color = Color.red;
+            rage();
+            raging = true;
+        }
+    }
+
+    public string returnTimeString(float time)
+    {
+        int roundedTime = Mathf.RoundToInt(rageTime - time);
+        int minutes = roundedTime / 60;
+        int seconds = roundedTime % 60;
+        string minutesString = minutes.ToString();
+        string secondsString = seconds.ToString();
+        // ensures time format is 00:00
+        if (minutes < 10)
+        {
+            minutesString = '0' + minutesString;
+        }
+        if(seconds < 10)
+        {
+            secondsString = '0' + secondsString;
+        }
+        return "time until rage: " + minutesString + ':' + secondsString;
+    }
+
+    public void rage()
+    {
+        CameraShaker.Instance.ShakeOnce(10, 5, 0.1f, 1f);
+        redTint.SetActive(true);
+    }
+
+    public bool returnRage()
+    {
+        return raging;
     }
 
     [PunRPC]
@@ -273,6 +319,9 @@ public class Manager : MonoBehaviourPunCallbacks
         {
             PlayerPrefs.SetInt("MONEY", PlayerPrefs.GetInt("MONEY") + winAmount);
             winText.text = "YOU WIN";
+
+            // sets on the JSON file that the difficulty specified has been beaten
+            PlayerPrefs.SetInt(stage, PlayerPrefs.GetInt("DIFFICULTY"));
         }
         else
         {
@@ -353,12 +402,12 @@ public class Manager : MonoBehaviourPunCallbacks
             if (nodeScript.getType() == "boss")
             {
                 nodeScript.changeState("production");
-                nodeScript.setKnightStrength(20, 10, 25);
+                nodeScript.setKnightStrength(30, 10, 25);
                 nodeScript.createKnight();
             }
             else if (nodeScript.getType() == "knight")
             {
-                nodeScript.setKnightStrength(10, 10, 15);
+                nodeScript.setKnightStrength(20, 10, 15);
                 nodeScript.createKnight();
             }
             else if (nodeScript.isNeutral() || nodeScript.sameTeam(false))

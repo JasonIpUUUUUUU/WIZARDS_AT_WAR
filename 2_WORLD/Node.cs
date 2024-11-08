@@ -508,6 +508,11 @@ public class Node : MonoBehaviour
         if (knight)
         {
             createKnight();
+            if (manager.returnRage())
+            {
+                yield return new WaitForSeconds(0.5f);
+                createKnight();
+            }
             StartCoroutine(knightLoop());
         }
     }
@@ -591,7 +596,7 @@ public class Node : MonoBehaviour
         {
             tempStrength += Mathf.RoundToInt(manPower * 0.1f);
         }
-        player.sendArmy(name, returnRandomNeigbour(new List<GameObject>(), false).name, tempStrength, false, true, true);
+        player.sendArmy(name, returnRandomNeigbour(new List<GameObject>(), false).name, tempStrength, false, true, true, "");
     }
 
     public void startTutorialFight()
@@ -601,7 +606,7 @@ public class Node : MonoBehaviour
 
     IEnumerator tutorialLoop()
     {
-        player.sendArmy(name, returnRandomNeigbourTutorial(new List<GameObject>(), false).name, 1, false, true, true);
+        player.sendArmy(name, returnRandomNeigbourTutorial(new List<GameObject>(), false).name, 1, false, true, true, "");
         yield return new WaitForSeconds(2);
         StartCoroutine(tutorialLoop());
     }

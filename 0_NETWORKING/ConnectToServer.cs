@@ -44,6 +44,7 @@ public class ConnectToServer : MonoBehaviourPunCallbacks
     {
         if (!PhotonNetwork.IsConnected)
         {
+            Debug.Log("try connect");
             connectedMaster = false;
             PhotonNetwork.GameVersion = gameVersion;
             // function used to connect to the network
@@ -52,7 +53,8 @@ public class ConnectToServer : MonoBehaviourPunCallbacks
         else
         {
             loadingCanvas.gameObject.SetActive(false);
-            if(PlayerPrefs.GetInt("TUTORIAL") != 1)
+            audio.Play();
+            if (PlayerPrefs.GetInt("TUTORIAL") != 1)
             {
                 PlayerPrefs.SetInt("SINGLE", 1);
                 SceneManager.LoadScene("TUTORIAL1");
@@ -148,6 +150,7 @@ public class ConnectToServer : MonoBehaviourPunCallbacks
 
     public override void OnJoinedRoom()
     {
+        Debug.Log("joined");
         PlayerPrefs.SetInt("SINGLE", 0);
         SceneManager.LoadScene("Loading");
     }

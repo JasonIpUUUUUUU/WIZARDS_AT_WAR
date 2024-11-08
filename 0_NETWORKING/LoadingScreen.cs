@@ -14,7 +14,6 @@ public class LoadingScreen : MonoBehaviourPunCallbacks
     void Update()
     {
         int playerCount = PhotonNetwork.CurrentRoom.PlayerCount;
-        Debug.Log(playerCount);
         if (playerCount == 2)
         {
             enterGame();
