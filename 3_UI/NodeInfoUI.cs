@@ -82,41 +82,47 @@ public class NodeInfoUI : MonoBehaviour
 
             if (node.sameTeam(redTeam))
             {
-                if (Input.GetKeyDown(KeyCode.P))
+                if(player.canPotionInteract() || player.returnPlayerInteract())
                 {
-                    interactPotion(!potionScreen.active);
+                    if (Input.GetKeyDown(KeyCode.P))
+                    {
+                        interactPotion(!potionScreen.active);
+                    }
                 }
-                if (Input.GetKeyDown(KeyCode.Alpha1))
+                if (player.returnPlayerInteract())
                 {
-                    slider.value = 0.25f;
-                }
-                if (Input.GetKeyDown(KeyCode.Alpha2))
-                {
-                    slider.value = 0.5f;
-                }
-                if (Input.GetKeyDown(KeyCode.Alpha3))
-                {
-                    slider.value = 0.75f;
-                }
-                if (Input.GetKeyDown(KeyCode.Alpha4))
-                {
-                    slider.value = 1;
-                }
-                if (Input.GetKeyDown(KeyCode.Return))
-                {
-                    startSend();
-                }
-                if (Input.GetKeyDown(KeyCode.U))
-                {
-                    startUpgrade();
-                }
-                if (Input.GetKeyDown(KeyCode.E))
-                {
-                    slider.value += 1f / manpower;
-                }
-                if (Input.GetKeyDown(KeyCode.Q))
-                {
-                    slider.value -= 1f / manpower;
+                    if (Input.GetKeyDown(KeyCode.Alpha1))
+                    {
+                        slider.value = 0.25f;
+                    }
+                    if (Input.GetKeyDown(KeyCode.Alpha2))
+                    {
+                        slider.value = 0.5f;
+                    }
+                    if (Input.GetKeyDown(KeyCode.Alpha3))
+                    {
+                        slider.value = 0.75f;
+                    }
+                    if (Input.GetKeyDown(KeyCode.Alpha4))
+                    {
+                        slider.value = 1;
+                    }
+                    if (Input.GetKeyDown(KeyCode.Return))
+                    {
+                        startSend();
+                    }
+                    if (Input.GetKeyDown(KeyCode.U))
+                    {
+                        startUpgrade();
+                    }
+                    if (Input.GetKeyDown(KeyCode.E))
+                    {
+                        slider.value += 1f / manpower;
+                    }
+                    if (Input.GetKeyDown(KeyCode.Q))
+                    {
+                        slider.value -= 1f / manpower;
+                    }
                 }
             }
         }
@@ -138,12 +144,13 @@ public class NodeInfoUI : MonoBehaviour
     // show the potion UI screen
     public void interactPotion(bool potionParam)
     {
-        if (!makingPotion)
+        if (!makingPotion && (player.returnPlayerInteract() || player.canPotionInteract()))
         {
             if (potionParam)
             {
                 potionScreen.GetComponent<Potion_UI>().setNode(node);
             }
+            player.UI_interacted();
             potionScreen.SetActive(potionParam);
         }
     }
@@ -151,7 +158,7 @@ public class NodeInfoUI : MonoBehaviour
     // start sending manpower
     public void startSend()
     {
-        if (sendAmount > 0)
+        if (sendAmount > 0 && player.returnPlayerInteract())
         {
             player.selectNodesToSend(sendAmount);
         }
@@ -163,7 +170,7 @@ public class NodeInfoUI : MonoBehaviour
 
     public void startUpgrade()
     {
-        if (node.upgradeManpower())
+        if (node.upgradeManpower() && player.returnPlayerInteract())
         {
             if (player.isSinglePlayer())
             {

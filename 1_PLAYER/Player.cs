@@ -9,7 +9,7 @@ public class Player : MonoBehaviour
 
     //showing refers to when the UI is shown, hiding is true when the UI is in the process of hiding and redTeam shows what team the player is in via a single variable
     [SerializeField]
-    private bool showing, hiding, redTeam, sending, isSingle, canInteract = true, tutorialNodeRoot;
+    private bool showing, hiding, redTeam, sending, isSingle, canInteract = true, tutorialNodeRoot, canPotion, waitPotionUI, waitPotionMake, waitPotionCreated;
 
     private int sendManPower;
 
@@ -140,50 +140,105 @@ public class Player : MonoBehaviour
         return isSingle;
     }
 
+    public bool returnPlayerInteract()
+    {
+        return canInteract;
+    }
+
+    public void setPotionInteract(bool potionParam)
+    {
+        canPotion = potionParam;
+    }
+
+    public bool canPotionInteract()
+    {
+        return canPotion;
+    }
+
+    public void startWaitPotion()
+    {
+        waitPotionUI = true;
+    }
+
+    public void startWaitPotionMake()
+    {
+        waitPotionMake = true;
+    }
+
+    public bool returnPotionMake()
+    {
+        return waitPotionMake;
+    }
+
+    public void madePotion()
+    {
+        tutorial.potionMake();
+    }
+
+    public void finalPotion()
+    {
+        tutorial.potionMade();
+    }
+
+    public void UI_interacted()
+    {
+        if (waitPotionUI)
+        {
+            Debug.Log("interact");
+            tutorial.potionUI();
+        }
+    }
+
     //this is run when the background is clicked
     public void emptySpace()
     {
-        if (node && !sending)
+        if (canInteract)
         {
-            node.GetComponent<Node>().spinShow(false);
-        }
-        node = null;
-        if (showing)
-        {
-            showing = false;
-            StartCoroutine(hideUI());
+            if (node && !sending)
+            {
+                node.GetComponent<Node>().spinShow(false);
+            }
+            node = null;
+            if (showing)
+            {
+                showing = false;
+                StartCoroutine(hideUI());
+            }
         }
     }
 
     //this is run when a node is clicked
     public void onNodeClicked(GameObject nodeArg)
     {
-        //if the nodeArg is equal to the selected node
-        if (node == nodeArg)
+        if (canInteract)
         {
-            node.GetComponent<Node>().spinShow(false);
-            showing = false;
-            if (sending)
-            {
-                cancelSend();
-            }
-            StartCoroutine(hideUI());
-        }
-        else if (canInteract)
-        {
-            if(nodeArg.GetComponent<Node>().getType() == "root node" && nodeArg.GetComponent<Node>().sameTeam(redTeam) && tutorialNodeRoot)
-            {
-                tutorial.rootClicked();
-            }
-            // if there is a node currently being selected
-            if (node)
+            //if the nodeArg is equal to the selected node
+            if (node == nodeArg)
             {
                 node.GetComponent<Node>().spinShow(false);
+                showing = false;
+                if (sending)
+                {
+                    cancelSend();
+                }
+                StartCoroutine(hideUI());
             }
-            node = nodeArg;
-            node.GetComponent<Node>().spinShow(true);
-            cam.addPosition(node.transform.position);
-            StartCoroutine(showUI());
+            else
+            {
+                if (nodeArg.GetComponent<Node>().getType() == "root node" && nodeArg.GetComponent<Node>().sameTeam(redTeam) && tutorialNodeRoot)
+                {
+                    tutorial.rootClicked();
+                }
+                // if there is a node currently being selected
+                if (node)
+                {
+                    node.GetComponent<Node>().spinShow(false);
+                }
+                node = nodeArg;
+                node.GetComponent<Node>().spinShow(true);
+                cam.addPosition(node.transform.position);
+                StartCoroutine(showUI());
+            }
         }
     }
 
@@ -203,6 +258,11 @@ public class Player : MonoBehaviour
     public bool getTeam()
     {
         return redTeam;
+    }
+
+    public bool isTutorial()
+    {
+        return tutorial;
     }
 
     public void chooseNode(string nodeName)

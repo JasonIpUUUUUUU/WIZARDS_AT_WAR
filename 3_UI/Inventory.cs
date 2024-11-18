@@ -153,6 +153,12 @@ public class Inventory : MonoBehaviour
             case "SHIELD":
                 description = "Shield potion: protects the attached army from 20 points of damage from any sources";
                 break;
+            case "POISON":
+                description = "Production potion: the node this army arrives to takes 1 damage per second for the next 10 second";
+                break;
+            case "FIRE":
+                description = "Shield potion: sets paths this army walks through on fire for 10 seconds which deals 1 damage per second to any army walking on it";
+                break;
         }
         return description;
     }

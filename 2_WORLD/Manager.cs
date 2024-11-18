@@ -374,6 +374,10 @@ public class Manager : MonoBehaviourPunCallbacks
 
     public void returnMenu()
     {
+        if (GameObject.FindGameObjectWithTag("TUTORIALMUSIC"))
+        {
+            Destroy(GameObject.FindGameObjectWithTag("TUTORIALMUSIC"));
+        }
         if (player.GetComponent<Player>().isSinglePlayer())
         {
             SceneManager.LoadScene("Menu");

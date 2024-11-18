@@ -23,8 +23,11 @@ public class Potion_UI : MonoBehaviour
     [SerializeField]
     private TextMeshProUGUI[] texts;
 
+    private Player player;
+
     public void Start()
     {
+        player = GameObject.FindGameObjectWithTag("PLAYER").GetComponent<Player>();
         setScreen();
     }
 
@@ -58,23 +61,36 @@ public class Potion_UI : MonoBehaviour
 
     public void attachPotion(int slot)
     {
-        string slotName = "SLOT" + slot.ToString();
-        string potion = PlayerPrefs.GetString(slotName);
-        float cooldown = 0;
-        switch (potion)
+        if(!player.isTutorial() || (player.canPotionInteract() && player.returnPotionMake()))
         {
-            case "HASTE":
-                cooldown = 15f;
-                break;
-            case "PRODUCE":
-                cooldown = 20f;
-                break;
-            case "SHIELD":
-                cooldown = 15f;
-                break;
+            if (player.isTutorial())
+            {
+                player.madePotion();
+            }
+            string slotName = "SLOT" + slot.ToString();
+            string potion = PlayerPrefs.GetString(slotName);
+            float cooldown = 0;
+            switch (potion)
+            {
+                case "HASTE":
+                    cooldown = 15f;
+                    break;
+                case "PRODUCE":
+                    cooldown = 20f;
+                    break;
+                case "SHIELD":
+                    cooldown = 15f;
+                    break;
+                case "POISON":
+                    cooldown = 20f;
+                    break;
+                case "FIRE":
+                    cooldown = 15f;
+                    break;
+            }
+            node.addPotion(potion, cooldown);
+            closeUI();
         }
-        node.addPotion(potion, cooldown);
-        closeUI();
     }
 
     public void closeUI()

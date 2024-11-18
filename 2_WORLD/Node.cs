@@ -88,6 +88,10 @@ public class Node : MonoBehaviour
             makingPotion = false;
             hasPotion = true;
             potionVisual.SetActive(true);
+            if (player.isTutorial())
+            {
+                player.finalPotion();
+            }
         }
     }
 
@@ -510,7 +514,7 @@ public class Node : MonoBehaviour
             createKnight();
             if (manager.returnRage())
             {
-                yield return new WaitForSeconds(0.5f);
+                yield return new WaitForSeconds(1.5f);
                 createKnight();
             }
             StartCoroutine(knightLoop());
