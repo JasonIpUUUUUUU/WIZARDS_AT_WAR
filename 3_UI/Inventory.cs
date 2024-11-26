@@ -51,7 +51,7 @@ public class Inventory : MonoBehaviour
         // iterate through a list of potions to see if the player has it
         for (int i = 0; i < potions.Length; i++)
         {
-            if (PlayerPrefs.HasKey(potions[i]))
+            if (PlayerPrefs.HasKey(potions[i]) && potions[i] != "")
             {
                 // create an instance of the potion if the player has unlocked it
                 GameObject potion = Instantiate(potionObjects, firstPos);
@@ -61,7 +61,7 @@ public class Inventory : MonoBehaviour
                 potion.transform.position += (secondPos.position - firstPos.position) * potionNum;
                 potionNum++;
                 // set the details of the potion
-                potion.GetComponent<potionInventoryObj>().setPotion(potions[i], this, getDescription(potions[i]));
+                potion.GetComponent<potionInventoryObj>().setPotion(potions[i], this, getDescription(potions[i]), potionSprites[i]);
             }
         }
     }
@@ -154,10 +154,13 @@ public class Inventory : MonoBehaviour
                 description = "Shield potion: protects the attached army from 20 points of damage from any sources";
                 break;
             case "POISON":
-                description = "Production potion: the node this army arrives to takes 1 damage per second for the next 10 second";
+                description = "Poision potion: the node this army arrives to takes 1 damage per second for the next 10 second";
                 break;
             case "FIRE":
-                description = "Shield potion: sets paths this army walks through on fire for 10 seconds which deals 1 damage per second to any army walking on it";
+                description = "Fire potion: sets paths this army walks through on fire for 10 seconds which deals 1 damage per second to any army walking on it";
+                break;
+            case "STUN":
+                description = "Stun potion: a potion which can be made quickly, when this army collides with another army, stun the opponent for 3 seconds";
                 break;
         }
         return description;

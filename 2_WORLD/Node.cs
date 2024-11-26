@@ -54,6 +54,7 @@ public class Node : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        Debug.Log(PlayerPrefs.GetInt("SINGLE"));
         nodeCanvas.worldCamera = Camera.main;
         player = GameObject.FindGameObjectWithTag("PLAYER").GetComponent<Player>();
         playerView = player.GetComponent<PhotonView>();
@@ -433,7 +434,7 @@ public class Node : MonoBehaviour
             manPowerText = GetComponentInChildren<TextMeshProUGUI>();
         }
         manPowerText.text = manPower.ToString();
-    }
+    } 
 
     // for when the production potion is used
     public IEnumerator tempIncreaseProduction(float duration)
@@ -601,6 +602,18 @@ public class Node : MonoBehaviour
             tempStrength += Mathf.RoundToInt(manPower * 0.1f);
         }
         player.sendArmy(name, returnRandomNeigbour(new List<GameObject>(), false).name, tempStrength, false, true, true, "");
+    }
+
+    public IEnumerator poisonLoop(int damage, bool team)
+    {
+        for (int i = 0; i < damage; i++)
+        {
+            if(redTeam != team)
+            {
+                modifyManPower(1, false, !redTeam);
+            }
+            yield return new WaitForSeconds(1);
+        }
     }
 
     public void startTutorialFight()

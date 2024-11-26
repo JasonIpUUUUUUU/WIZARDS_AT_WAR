@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 using TMPro;
 using Photon.Pun;
 
@@ -9,10 +10,10 @@ public class Army : MonoBehaviour
     private bool moving, disappearing, redteam, singlePlayer, transformed;
 
     [SerializeField]
-    private int manpower, index = -1, shieldAmount;
+    private int manpower, index = -1, shieldAmount, poisonDamage;
 
     [SerializeField]
-    private float speed, counter;
+    private float speed, counter, fireDamageCounter;
 
     private string potion;
 
@@ -24,6 +25,9 @@ public class Army : MonoBehaviour
 
     [SerializeField]
     private Sprite redSprite, blueSprite;
+
+    [SerializeField]
+    private Image damageImage;
 
     private Player player;
 
@@ -51,6 +55,10 @@ public class Army : MonoBehaviour
         if (moving)
         {
             counter += Time.deltaTime;
+            if(fireDamageCounter > 0)
+            {
+                fireDamageCounter -= Time.deltaTime;
+            }
 
             //move towards the next node
             transform.position = Vector3.MoveTowards(transform.position, next.transform.position, speed * Time.deltaTime);
@@ -69,9 +77,20 @@ public class Army : MonoBehaviour
                 nextNode();
             }
 
+            if(potion == "FIRE")
+            {
+                currentEdge.setFire(redteam, 10);
+            }
+
             if (currentEdge.returnGold())
             {
                 turnIntoEnemy();
+            }
+
+            if (currentEdge.hasFire(redteam) && fireDamageCounter <= 0) 
+            {
+                adjustManpower(1);
+                fireDamageCounter = 1;
             }
         }
     }
@@ -121,7 +140,7 @@ public class Army : MonoBehaviour
 
     public void adjustManpower(int amount)
     {
-        Debug.Log("adjusting");
+        StartCoroutine(damageEffect());
         int actualAmount = amount;
         if (shieldAmount > 0)
         {
@@ -140,6 +159,25 @@ public class Army : MonoBehaviour
         if(manpower <= 0)
         {
             Destroy(gameObject, 0.01f);
+        }
+    }
+
+    IEnumerator damageEffect()
+    {
+        float flashDuration = 0.25f, flashCounter = 0f;
+        float shorterFlash = flashDuration / 2;
+        while(flashCounter < shorterFlash)
+        {
+            flashCounter += Time.deltaTime;
+            damageImage.color = new Color32(255, 255, 255, (byte) (255 * flashCounter / shorterFlash));
+            yield return null;
+        }
+        flashCounter = 0;
+        while (flashCounter < flashDuration)
+        {
+            flashCounter += Time.deltaTime;
+            damageImage.color = new Color32(255, 255, 255, (byte)(1 - 255 * flashCounter / flashDuration));
+            yield return null;
         }
     }
 
@@ -170,6 +208,18 @@ public class Army : MonoBehaviour
     public int getManpower()
     {
         return manpower;
+    }
+
+    public IEnumerator stunCoroutine()
+    {
+        moving = false;
+        yield return new WaitForSeconds(3);
+        moving = true;
+    }
+
+    public bool returnStun()
+    {
+        return potion == "STUN";
     }
 
 
@@ -203,7 +253,6 @@ public class Army : MonoBehaviour
         nextNode();
     }
 
-    [PunRPC]
     IEnumerator appear()
     {
         //animation when the gameobject is created
@@ -213,19 +262,22 @@ public class Army : MonoBehaviour
         transform.localScale = Vector3.one;
     }
 
-    [PunRPC]
     IEnumerator disappear()
     {
         //animation before it is destroyed
         gameObject.LeanScale(Vector3.zero, 0.5f).setEaseInElastic();
         yield return new WaitForSeconds(0.5f);
+        if (potion == "PRODUCE")
+        {
+            player.producePotionPre(next.name, potionDuration);
+        }
+        if (potion == "POISON")
+        {
+            player.poisonPotionPre(next.name, poisonDamage, redteam);
+        }
         if (singlePlayer)
         {
             next.GetComponent<Node>().modifyManPower(manpower, true, redteam, transformed);
-            if (potion == "PRODUCE")
-            {
-                player.productionPotion(next.name, potionDuration);
-            }
         }
         else
         {
@@ -233,10 +285,6 @@ public class Army : MonoBehaviour
             if (playerView.IsMine)
             {
                 playerView.RPC("modifyManpower", RpcTarget.AllBuffered, target.name, manpower, true, redteam);
-            }
-            if(potion == "PRODUCE")
-            {
-                playerView.RPC("productionPotion", RpcTarget.AllBuffered, target.name, potionDuration);
             }
         }
         Destroy(gameObject);
@@ -247,12 +295,19 @@ public class Army : MonoBehaviour
         // check collisions for a single team only (as collisions only occur when opposing teams collide, to ensure the values are correct only have this function called once)
         if (collision.CompareTag("ARMY") && redteam)
         {
-            Debug.Log("Collided");
             if(redteam != collision.GetComponent<Army>().redteam)
             {
                 int enemyManpower = collision.GetComponent<Army>().getManpower();
                 collision.GetComponent<Army>().adjustManpower(manpower);
                 adjustManpower(enemyManpower);
+                if (potion == "STUN")
+                {
+                    StartCoroutine(collision.GetComponent<Army>().stunCoroutine());
+                }
+                if (collision.GetComponent<Army>().returnStun())
+                {
+                    StartCoroutine(stunCoroutine());
+                }
             }
         }
     }

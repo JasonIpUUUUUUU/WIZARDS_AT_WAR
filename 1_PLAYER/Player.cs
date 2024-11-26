@@ -60,34 +60,33 @@ public class Player : MonoBehaviour
             if (showing)
             {
                 StartCoroutine(hideUI());
-                yield return new WaitForSeconds(0.25f);
+                yield return new WaitForSeconds(0.3f);
             }
             showing = true;
             current_UI = Instantiate(UI_Prefab, UI_Canvas.transform);
-            current_UI.transform.localPosition = new Vector3(0, -Screen.height * 1.5f);
+            RectTransform canvasRect = UI_Canvas.GetComponent<RectTransform>();
+            float canvasHeight = canvasRect.rect.height;
+            Debug.Log(node);
+            RectTransform rect = current_UI.GetComponent<RectTransform>();
+            rect.anchoredPosition = new Vector3(0, -canvasHeight * 1.5f);
             current_UI.GetComponent<NodeInfoUI>().instantiateValues(node.GetComponent<Node>(), this, redTeam, potion_UI);
             LeanTween.cancelAll();
-            current_UI.LeanMoveLocalY(-Screen.height * 0.35f, 1).setEaseOutExpo();
+            rect.LeanMoveLocalY(-canvasHeight * 0.325f, 1).setEaseOutExpo();
             yield return new WaitForSeconds(0.5f);
         }
     }
 
-    //this is to hide the UI
     public IEnumerator hideUI()
     {
         LeanTween.cancelAll();
         hiding = true;
-        current_UI.LeanMoveLocalY(-Screen.height * 2, 0.25f);
+        RectTransform rect = current_UI.GetComponent<RectTransform>();
+        RectTransform canvasRect = UI_Canvas.GetComponent<RectTransform>();
+        float canvasHeight = canvasRect.rect.height;
+        rect.LeanMoveLocalY(-canvasHeight * 2, 0.25f);
         yield return new WaitForSeconds(0.25f);
         hiding = false;
-        if (showing)
-        {
-            showing = false;
-        }
-        else
-        {
-            node = null;
-        }
+        showing = false;
         Destroy(current_UI, 0.5f);
     }
 
@@ -109,6 +108,7 @@ public class Player : MonoBehaviour
     // this is to cancel sending
     public void cancelSend()
     {
+        node.GetComponent<Node>().spinShow(false);
         selectedNode.GetComponent<Node>().spinShow(false);
         foreach (GameObject nodeArg in validNodes)
         {
@@ -117,6 +117,7 @@ public class Player : MonoBehaviour
         sending = false;
         sendManPower = 0;
         selectedNode = null;
+        node = null;
         validNodes.Clear();
     }
 
@@ -221,7 +222,11 @@ public class Player : MonoBehaviour
                 {
                     cancelSend();
                 }
-                StartCoroutine(hideUI());
+                node = null;
+                if (current_UI)
+                {
+                    StartCoroutine(hideUI());
+                }
             }
             else
             {
@@ -234,6 +239,7 @@ public class Player : MonoBehaviour
                 {
                     node.GetComponent<Node>().spinShow(false);
                 }
+                Debug.Log("show");
                 node = nodeArg;
                 node.GetComponent<Node>().spinShow(true);
                 cam.addPosition(node.transform.position);
@@ -280,6 +286,31 @@ public class Player : MonoBehaviour
             }
         }
     }
+
+    public void producePotionPre(string nodeName, float duration)
+    {
+        if (isSingle)
+        {
+            productionPotion(nodeName, duration);
+        }
+        else
+        {
+            view.RPC("productionPotion", RpcTarget.AllBuffered, nodeName, duration);
+        }
+    }
+
+    public void poisonPotionPre(string nodeName, int duration, bool team)
+    {
+        if (isSingle)
+        {
+            poisonPotion(nodeName, duration, team);
+        }
+        else if(team = redTeam)
+        {
+            view.RPC("poisonPotion", RpcTarget.AllBuffered, nodeName, duration, team);
+        }
+    }
+
 
     [PunRPC]
     public void sendArmy(string selectedNodeParam, string nodeName, int sendManPowerParam, bool redTeamParam, bool singleParam, bool bossParam, string potionParam)
@@ -344,5 +375,15 @@ public class Player : MonoBehaviour
     {
         GameObject node = GameObject.Find(nodeName);
         StartCoroutine(node.GetComponent<Node>().tempIncreaseProduction(duration));
+    }
+
+    [PunRPC]
+    public void poisonPotion(string nodeName, int duration, bool redTeam)
+    {
+        GameObject node = GameObject.Find(nodeName);
+        if (!(node.GetComponent<Node>().sameTeam(redTeam) && node.GetComponent<Node>().isNeutral()))
+        {
+            StartCoroutine(node.GetComponent<Node>().poisonLoop(duration, redTeam));
+        }
     }
 }

@@ -14,11 +14,15 @@ public class potionInventoryObj : MonoBehaviour
     [SerializeField]
     private TextMeshProUGUI potionDesc;
 
-    public void setPotion(string potionTypeParam, Inventory inventoryParam, string desc)
+    [SerializeField]
+    private Image icon;
+
+    public void setPotion(string potionTypeParam, Inventory inventoryParam, string desc, Sprite potionSprite)
     {
         inventory = inventoryParam;
         potionType = potionTypeParam;
         potionDesc.text = desc;
+        icon.sprite = potionSprite;
     }
 
     public void equipPotion()

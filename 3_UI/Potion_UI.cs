@@ -87,6 +87,9 @@ public class Potion_UI : MonoBehaviour
                 case "FIRE":
                     cooldown = 15f;
                     break;
+                case "STUN":
+                    cooldown = 5f;
+                    break;
             }
             node.addPotion(potion, cooldown);
             closeUI();

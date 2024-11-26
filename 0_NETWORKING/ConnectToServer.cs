@@ -99,6 +99,8 @@ public class ConnectToServer : MonoBehaviourPunCallbacks
     // quality of life change so there is visually something going on while waiting for the server
     IEnumerator connectingLoop(int index)
     {
+        PlayerPrefs.SetInt("SINGLE", 0);
+        Debug.Log("Set single to false 3");
         string connectingMessage = "connecting";
         for(int i = 0; i <= index % 3; i++)
         {
@@ -136,6 +138,7 @@ public class ConnectToServer : MonoBehaviourPunCallbacks
     {
         //Fails if there are no open games. Error callback: IMatchmakingCallbacks.OnJoinRandomFailed
         PhotonNetwork.JoinRandomRoom();
+        PlayerPrefs.SetInt("SINGLE", 0);
     }
 
     public override void OnJoinRandomFailed(short returnCode, string message)
