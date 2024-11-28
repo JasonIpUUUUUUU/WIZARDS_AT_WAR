@@ -7,13 +7,13 @@ using Photon.Pun;
 
 public class Army : MonoBehaviour
 {
-    private bool moving, disappearing, redteam, singlePlayer, transformed;
+    private bool moving, disappearing, redteam, singlePlayer, transformed, onElectro;
 
     [SerializeField]
     private int manpower, index = -1, shieldAmount, poisonDamage;
 
     [SerializeField]
-    private float speed, counter, fireDamageCounter;
+    private float speed, counter, fireDamageCounter, speedMultiplierElectro;
 
     private string potion;
 
@@ -60,8 +60,21 @@ public class Army : MonoBehaviour
                 fireDamageCounter -= Time.deltaTime;
             }
 
+            float tempSpeed = speed;
+
+            if (currentEdge.returnElectro())
+            {
+                if (redteam)
+                {
+                    tempSpeed *= 0.5f;
+                }
+                else
+                {
+                    tempSpeed *= 1.5f;
+                }
+            }
             //move towards the next node
-            transform.position = Vector3.MoveTowards(transform.position, next.transform.position, speed * Time.deltaTime);
+            transform.position = Vector3.MoveTowards(transform.position, next.transform.position, tempSpeed * Time.deltaTime);
 
             //calculating time before reaching target (distance/speed)
             if ((!next.GetComponent<Node>().sameTeam(redteam) || next == target) && (next.transform.position - transform.position).magnitude / speed < 0.4f && !disappearing)
@@ -114,6 +127,10 @@ public class Army : MonoBehaviour
                 {
                     time /= 2;
                 }
+                if(potion == "ELECTROSPEED")
+                {
+                    time /= 1 + PlayerPrefs.GetInt("DIFFICULTY") * 0.5f;
+                }
                 speed = distance / time;
                 //conversion of the angle from radians to degrees
                 float angle = Mathf.Atan2(direction.x, direction.y) * Mathf.Rad2Deg;
@@ -164,8 +181,9 @@ public class Army : MonoBehaviour
 
     IEnumerator damageEffect()
     {
+        damageImage.color = new Color32(255, 255, 255, 0);
         float flashDuration = 0.25f, flashCounter = 0f;
-        float shorterFlash = flashDuration / 2;
+        float shorterFlash = flashDuration / 4;
         while(flashCounter < shorterFlash)
         {
             flashCounter += Time.deltaTime;
@@ -176,9 +194,10 @@ public class Army : MonoBehaviour
         while (flashCounter < flashDuration)
         {
             flashCounter += Time.deltaTime;
-            damageImage.color = new Color32(255, 255, 255, (byte)(1 - 255 * flashCounter / flashDuration));
+            damageImage.color = new Color32(255, 255, 255, (byte)(255 * (1 - flashCounter / flashDuration)));
             yield return null;
         }
+        damageImage.color = new Color32(255, 255, 255, 0);
     }
 
     public void turnIntoEnemy()

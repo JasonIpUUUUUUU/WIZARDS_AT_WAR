@@ -7,7 +7,7 @@ using Photon.Pun;
 public class edges : MonoBehaviour
 {
     [SerializeField]
-    private bool golden, redFire, blueFire;
+    private bool golden, redFire, blueFire, electro;
 
     [SerializeField]
     private GameObject fireEffects, currentBlueFire, currentRedFire, fireParticles, line2, showingLineRed, showingLineBlue;
@@ -125,6 +125,28 @@ public class edges : MonoBehaviour
         {
             return redFire == true;
         }
+    }
+
+    public void turnElectro(bool infinite)
+    {
+        StartCoroutine(electroCoroutine(infinite));
+    }
+
+    private IEnumerator electroCoroutine(bool infinite)
+    {
+        electro = true;
+        lr.SetColors(goldColor, goldColor);
+        if (!infinite)
+        {
+            yield return new WaitForSeconds(6);
+            electro = false;
+            lr.SetColors(defaultColor, defaultColor);
+        }
+    }
+
+    public bool returnElectro()
+    {
+        return electro;
     }
 
     public void setDistance(int distanceP)

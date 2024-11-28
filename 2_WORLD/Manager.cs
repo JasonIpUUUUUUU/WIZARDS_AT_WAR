@@ -367,6 +367,24 @@ public class Manager : MonoBehaviourPunCallbacks
         }
     }
 
+    public void turnPathElectro(bool infinity)
+    {
+        if (!infinity)
+        {
+            int randoIndex = Random.Range(0, edgesList.Count);
+            while (edgesList[randoIndex].GetComponent<edges>().returnElectro())
+            {
+                randoIndex = Random.Range(0, edgesList.Count);
+            }
+            edgesList[randoIndex].GetComponent<edges>().turnElectro(infinity);
+        }
+        else
+        {
+            edgesList[0].GetComponent<edges>().turnElectro(infinity);
+            edgesList[1].GetComponent<edges>().turnElectro(infinity);
+        }
+    }
+
     public Node returnRandomValidNode()
     {
         return null;

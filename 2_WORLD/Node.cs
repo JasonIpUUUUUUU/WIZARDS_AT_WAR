@@ -487,6 +487,13 @@ public class Node : MonoBehaviour
                 {
                     isBoss = true;
                 }
+                if (bossScript.returnBoss() == "ELECTRO")
+                {
+                    // stats of faster enemies
+                    StartCoroutine(electroArmies(10, true));
+                    // stats of slower enemies
+                    StartCoroutine(electroArmies(20, false));
+                }
                 // boss nodes start with a set amount of health and have to be defeated by the player in singleplayer
                 selfRenderer.color = rootColor;
                 isRoot = true;
@@ -520,6 +527,40 @@ public class Node : MonoBehaviour
             }
             StartCoroutine(knightLoop());
         }
+    }
+
+    IEnumerator electroArmies(int size, bool fast)
+    {
+        float randoTime = Random.Range(5f, 15f);
+        yield return new WaitForSeconds(randoTime);
+        createElectro(size, fast);
+        StartCoroutine(electroArmies(size, fast));
+        
+    }
+
+    public void createElectro(int size, bool fast)
+    {
+        int tempSize = size;
+        string effect = "";
+        if (fast)
+        {
+            effect = "ELECTROSPEED";
+        }
+        if (!fast)
+        {
+            tempSize += (PlayerPrefs.GetInt("DIFFICULTY") - 1) * 10;
+        }
+        player.sendArmy(name, returnRandomNeigbour(new List<GameObject>(), false).name, tempSize, false, true, true, effect);
+    }
+
+    public void createKnight()
+    {
+        int tempStrength = knightStrength;
+        if (PlayerPrefs.GetInt("DIFFICULTY") == 3)
+        {
+            tempStrength += Mathf.RoundToInt(manPower * 0.1f);
+        }
+        player.sendArmy(name, returnRandomNeigbour(new List<GameObject>(), false).name, tempStrength, false, true, true, "");
     }
 
     public void setKnightStrength(int strength, float knightMinP, float knightMaxP)
@@ -592,16 +633,6 @@ public class Node : MonoBehaviour
             }
         }
         return returnObject;
-    }
-
-    public void createKnight()
-    {
-        int tempStrength = knightStrength;
-        if (PlayerPrefs.GetInt("DIFFICULTY") == 3)
-        {
-            tempStrength += Mathf.RoundToInt(manPower * 0.1f);
-        }
-        player.sendArmy(name, returnRandomNeigbour(new List<GameObject>(), false).name, tempStrength, false, true, true, "");
     }
 
     public IEnumerator poisonLoop(int damage, bool team)
