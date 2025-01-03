@@ -7,19 +7,13 @@ public class ElectroWizard : MonoBehaviour
     private bool phase2Started = false, won = false;
 
     [SerializeField]
-    private string[] knightNodeNames;
-
-    [SerializeField]
-    private Color goldColor;
+    private AudioSource audio;
 
     [SerializeField]
     private SpriteRenderer bg;
 
     [SerializeField]
-    private GameObject goldCanvas, coolFog;
-
-    [SerializeField]
-    private CanvasGroup goldenAlpha;
+    private GameObject blackBlock;
 
     private Manager manager;
 
@@ -54,8 +48,8 @@ public class ElectroWizard : MonoBehaviour
 
     IEnumerator conveyerPath()
     {
+        yield return new WaitForSeconds(3f);
         manager.turnPathElectro(false);
-        yield return new WaitForSeconds(4f);
         StartCoroutine(conveyerPath());
     }
 
@@ -63,7 +57,25 @@ public class ElectroWizard : MonoBehaviour
     {
         if (!won)
         {
-            yield return new WaitForSeconds(2000);
+            audio.Stop();
+            blackBlock.SetActive(true);
+            manager.blackOut(2);
+            if(PlayerPrefs.GetInt("DIFFICULTY") == 3)
+            {
+                for(int i = 0; i < 2; i++)
+                {
+                    boss.returnRootNode().createElectro(30, true);
+                    yield return new WaitForSeconds(1);
+                }
+            }
+            else
+            {
+                yield return new WaitForSeconds(2);
+            }
+            blackBlock.SetActive(false);
+            audio.Play();
+            yield return new WaitForSeconds(Random.Range(6f, 18f));
+            StartCoroutine(blackOut());
         }
     }
 

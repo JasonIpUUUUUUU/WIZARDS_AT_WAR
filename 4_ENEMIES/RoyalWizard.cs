@@ -68,7 +68,7 @@ public class RoyalWizard : MonoBehaviour
     IEnumerator goldenPath()
     {
         manager.turnPathGold();
-        yield return new WaitForSeconds(8);
+        yield return new WaitForSeconds(9);
         StartCoroutine(goldenPath());
     }
 

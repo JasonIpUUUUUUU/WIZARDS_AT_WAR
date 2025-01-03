@@ -10,7 +10,7 @@ public class edges : MonoBehaviour
     private bool golden, redFire, blueFire, electro;
 
     [SerializeField]
-    private GameObject fireEffects, currentBlueFire, currentRedFire, fireParticles, line2, showingLineRed, showingLineBlue;
+    private GameObject fireEffects, currentBlueFire, currentRedFire, fireParticles, line2, showingLineRed, showingLineBlue, sparkle, electroboom;
 
     [SerializeField]
     private float redFireCounter, blueFireCounter;
@@ -19,7 +19,7 @@ public class edges : MonoBehaviour
     private int distance;
 
     [SerializeField]
-    private Color goldColor, defaultColor;
+    private Color electroColor, electroColor2, goldColor, defaultColor;
 
     private LineRenderer lr;
 
@@ -89,7 +89,7 @@ public class edges : MonoBehaviour
             particles.startColor = Color.blue;
             currentBlueFire = particles.gameObject;
         }
-        particles.transform.position = (startPoint + endPoint) / 2;
+        particles.transform.position = returnMidPoint();
         particles.Play();
     }
 
@@ -134,11 +134,14 @@ public class edges : MonoBehaviour
 
     private IEnumerator electroCoroutine(bool infinite)
     {
+        GameObject b = Instantiate(electroboom);
+        b.transform.position = returnMidPoint();
+        Destroy(b, 0.5f);
         electro = true;
-        lr.SetColors(goldColor, goldColor);
+        lr.SetColors(electroColor, electroColor2);
         if (!infinite)
         {
-            yield return new WaitForSeconds(6);
+            yield return new WaitForSeconds(9);
             electro = false;
             lr.SetColors(defaultColor, defaultColor);
         }
@@ -152,6 +155,16 @@ public class edges : MonoBehaviour
     public void setDistance(int distanceP)
     {
         distance = distanceP;
+    }
+
+    public int returnDistance()
+    {
+        int tempDist = distance;
+        if (electro)
+        {
+            tempDist /= 2;
+        }
+        return tempDist;
     }
 
     public void setLine(Vector2 startPoint, Vector2 endPoint)
@@ -168,9 +181,12 @@ public class edges : MonoBehaviour
 
     private IEnumerator goldCoroutine()
     {
+        GameObject b = Instantiate(sparkle);
+        b.transform.position = returnMidPoint();
+        Destroy(b, 8);
         golden = true;
         lr.SetColors(goldColor, goldColor);
-        yield return new WaitForSeconds(6);
+        yield return new WaitForSeconds(8);
         golden = false;
         lr.SetColors(defaultColor, defaultColor);
     }
@@ -178,5 +194,12 @@ public class edges : MonoBehaviour
     public bool returnGold()
     {
         return golden;
+    }
+
+    public Vector3 returnMidPoint()
+    {
+        Vector3 startPoint = lr.GetPosition(0);
+        Vector3 endPoint = lr.GetPosition(1);
+        return (startPoint + endPoint) / 2;
     }
 }

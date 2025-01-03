@@ -4,6 +4,7 @@ using UnityEngine;
 using TMPro;
 using UnityEngine.UI;
 using Photon.Pun;
+using EZCameraShake;
 
 public class Node : MonoBehaviour
 {
@@ -12,10 +13,11 @@ public class Node : MonoBehaviour
 
     private float potionCounter, potionTime, knightMin, knightMax;
 
+    [SerializeField]
     private BossBehaviour bossScript;
 
     [SerializeField]
-    private bool isRoot, productionNode, redTeam, neutral, producing, selecting, hasPotion, makingPotion, knight, phase2, isBoss;
+    private bool isRoot, productionNode, redTeam, neutral, producing, selecting, hasPotion, makingPotion, knight, phase2, isBoss, blackout, blackHole, meteoring, astroNode;
 
     private string potion;
 
@@ -32,6 +34,7 @@ public class Node : MonoBehaviour
 
     private Manager manager;
 
+    [SerializeField]
     private Player player;
 
     public List<int> distances;
@@ -47,7 +50,7 @@ public class Node : MonoBehaviour
 
     //transparent dark sprites to signify different states
     [SerializeField]
-    private GameObject clickSprite, selectSprite, spinner, potionBarObject, potionVisual;
+    private GameObject clickSprite, selectSprite, spinner, potionBarObject, potionVisual, redVisual, meteor, meteorEffect;
 
     private PhotonView playerView;
 
@@ -80,8 +83,11 @@ public class Node : MonoBehaviour
 
         if (potionCounter > 0)
         {
-            potionBar.fillAmount = returnPotionFill();
-            potionCounter -= Time.deltaTime;
+            if (!blackout)
+            {
+                potionBar.fillAmount = returnPotionFill();
+                potionCounter -= Time.deltaTime;
+            }
         }
         else if (makingPotion)
         {
@@ -94,6 +100,13 @@ public class Node : MonoBehaviour
                 player.finalPotion();
             }
         }
+    }
+
+    public IEnumerator blackOutCoroutine(int duration)
+    {
+        blackout = true;
+        yield return new WaitForSeconds(duration);
+        blackout = false;
     }
 
     //this is an infinite loop where the manpower on the node increments every second
@@ -111,6 +124,10 @@ public class Node : MonoBehaviour
                 playerView.RPC("modifyManpower", RpcTarget.AllBuffered, name, 1, true, redTeam);
             }
             yield return new WaitForSeconds(1f / productionLevel);
+            while (blackout)
+            {
+                yield return null;
+            }
             StartCoroutine(productionCoroutine());
         }
     }
@@ -350,6 +367,21 @@ public class Node : MonoBehaviour
         return null;
     }
 
+    public bool returnAstro()
+    {
+        return astroNode;
+    }
+
+    public bool returnBlackHole()
+    {
+        return blackHole;
+    }
+
+    public void setManpower(int manpowerP)
+    {
+        manPower = manpowerP;
+    }
+
     //this is to increase or decrease manpower on the node
     public void modifyManPower(int amount, bool add, bool red, bool transformed = false)
     {
@@ -358,7 +390,11 @@ public class Node : MonoBehaviour
             manPower += amount;
             if (neutral)
             {
-                player.reselect(neighbours);
+                player = GameObject.FindGameObjectWithTag("PLAYER").GetComponent<Player>();
+                if (player.getTeam() == redTeam)
+                {
+                    player.reselect(neighbours);
+                }
                 if (red)
                 {
                     if (player.isSinglePlayer())
@@ -496,17 +532,36 @@ public class Node : MonoBehaviour
                 }
                 // boss nodes start with a set amount of health and have to be defeated by the player in singleplayer
                 selfRenderer.color = rootColor;
-                isRoot = true;
                 // increases manpower by the health of the boss and gives a reference of this script to the boss
                 modifyManPower(bossScript.linkNode(this), true, redTeam);
+                isRoot = true;
                 break;
             case "boss2":
                 // phase 2 of each boss
+                if (bossScript.returnBoss() == "ELECTRO")
+                {
+                    // stats of faster enemies
+                    StartCoroutine(electroArmies(10, true));
+                    // stats of slower enemies
+                    StartCoroutine(electroArmies(20, false));
+                }
+                if (bossScript.returnBoss() == "SPACE")
+                {
+                    isRoot = false;
+                    isBoss = false;
+                    blackHole = true;
+                    manPower = 0;
+                    manager.setAstroBoss();
+                }
+                else
+                {
+                    manPower = bossScript.returnMaxHealth();
+                }
                 manPower = bossScript.returnMaxHealth();
                 bossScript.startPhase2();
                 break;
             case "knight":
-                knight = true;
+                knight = true;  
                 StartCoroutine(knightLoop());
                 break;
         }
@@ -531,11 +586,10 @@ public class Node : MonoBehaviour
 
     IEnumerator electroArmies(int size, bool fast)
     {
-        float randoTime = Random.Range(5f, 15f);
+        float randoTime = Random.Range(5f, 10f);
         yield return new WaitForSeconds(randoTime);
         createElectro(size, fast);
         StartCoroutine(electroArmies(size, fast));
-        
     }
 
     public void createElectro(int size, bool fast)
@@ -548,7 +602,7 @@ public class Node : MonoBehaviour
         }
         if (!fast)
         {
-            tempSize += (PlayerPrefs.GetInt("DIFFICULTY") - 1) * 10;
+            tempSize += (PlayerPrefs.GetInt("DIFFICULTY") - 1) * 5;
         }
         player.sendArmy(name, returnRandomNeigbour(new List<GameObject>(), false).name, tempSize, false, true, true, effect);
     }
@@ -571,37 +625,56 @@ public class Node : MonoBehaviour
         knightMax = knightMaxP;
     }
 
-    // returns a singular node which it can conquer, the node is randomly selected
-    public GameObject returnRandomNeigbour(List<GameObject> initialList, bool playerTeam)
+    public GameObject returnRandomNeigbour(List<GameObject> initialList, bool playerTeam, GameObject startingNode = null)
     {
-        // define initial lists such as a list of of the nodes that have been explored, a list of the nodes which haven't been explored and a list of every node
-        List<GameObject> currentObjects = new List<GameObject> { gameObject }, checkObjects = new List<GameObject>(), everything = currentObjects;
-        everything.AddRange(initialList);
-
-        // define the object to return
+        Stack<GameObject> nodeStack = new Stack<GameObject>();
+        nodeStack.Push(gameObject); 
+        List<GameObject> visitedNodes = new List<GameObject>(initialList);
+        visitedNodes.Add(gameObject); 
         GameObject returnObject = gameObject;
 
-        if (!neutral && playerTeam == redTeam)
+        while (nodeStack.Count > 0)
         {
-            // loop through each neighbouring node and puts them into the checkObjects script so a random one can be selected
-            foreach (GameObject neighbour in neighbours)
+            GameObject currentNode = nodeStack.Pop();
+            Node currentNodeComponent = currentNode.GetComponent<Node>();
+
+            // Check if the current node is valid for exploration
+            if (!currentNodeComponent.neutral && (playerTeam == currentNodeComponent.redTeam || currentNode == startingNode))
             {
-                // if it hasn't been explored previously, add it into the list of possible nodes the explore and isn't a root of the same team as the the current node
-                if (!initialList.Contains(neighbour) && !(neighbour.GetComponent<Node>().getType() == "root node" && neighbour.GetComponent<Node>().sameTeam(redTeam)))
+                List<GameObject> validNeighbours = new List<GameObject>();
+                foreach (GameObject neighbour in currentNodeComponent.neighbours)
                 {
-                    checkObjects.Add(neighbour);
+                    Node neighbourNode = neighbour.GetComponent<Node>();
+                    if (!visitedNodes.Contains(neighbour) && !(neighbourNode.getType() == "root node" && neighbourNode.sameTeam(currentNodeComponent.redTeam)) && neighbourNode.isActiveAndEnabled)
+                    {
+                        validNeighbours.Add(neighbour);
+                    }
+                }
+
+                // If there are valid neighbours, pick one randomly
+                if (validNeighbours.Count > 0)
+                {
+                    GameObject nextNode = validNeighbours[Random.Range(0, validNeighbours.Count)];
+                    visitedNodes.Add(nextNode);
+                    nodeStack.Push(nextNode);  
+                    returnObject = nextNode;  
+                }
+                else
+                {
+                    nodeStack.Clear();
                 }
             }
-            // once a list of possible nodes is created, select a random one and explore it
-            if (checkObjects.Count > 0)
+            else
             {
-                Node nextCheck = checkObjects[Random.Range(0, checkObjects.Count)].GetComponent<Node>();
-                everything.Add(nextCheck.gameObject);
-                returnObject = nextCheck.returnRandomNeigbour(everything, playerTeam);
+                visitedNodes.Add(currentNode);
             }
         }
+
+        Debug.Log($"GOING FROM: {name}, TO: {returnObject.name}");
         return returnObject;
     }
+
+
 
     // a version exclusively for the tutorial to prevent the palyer from being beaten
     public GameObject returnRandomNeigbourTutorial(List<GameObject> initialList, bool playerTeam)
@@ -657,5 +730,85 @@ public class Node : MonoBehaviour
         player.sendArmy(name, returnRandomNeigbourTutorial(new List<GameObject>(), false).name, 1, false, true, true, "");
         yield return new WaitForSeconds(2);
         StartCoroutine(tutorialLoop());
+    }
+
+    public IEnumerator fireMeteor(bool phase2)
+    {
+        StartCoroutine(fadeMeteor());
+        yield return new WaitForSeconds(2);
+        GameObject b = Instantiate(meteor);
+        b.transform.position = new Vector3(100, 100);
+        b.GetComponent<Meteor>().setMeteor(gameObject);
+        yield return new WaitForSeconds(1);
+        CameraShaker.Instance.ShakeOnce(10, 10, 0.1f, 1f);
+        int meteorPower = 10 + (PlayerPrefs.GetInt("DIFFICULTY") - 1) * 5;
+        modifyManPower(meteorPower, true, false);
+        player.sendArmy(name, returnRandomNeigbour(new List<GameObject>(), false, gameObject).name, meteorPower, false, true, true, "", true, phase2);
+        GameObject effect = Instantiate(meteorEffect);
+        effect.transform.position = transform.position;
+        redVisual.SetActive(false);
+    }
+
+    IEnumerator fadeMeteor()
+    {
+        redVisual.SetActive(true);
+        float elapsedTime = 0f;
+        SpriteRenderer renderer = redVisual.GetComponent<SpriteRenderer>();
+        Color color = renderer.color;
+        color.a = 0;
+
+        while (elapsedTime < 3)
+        {
+            elapsedTime += Time.deltaTime;
+            color.a = Mathf.Clamp01(elapsedTime / 3);
+            renderer.color = color; 
+            yield return null; 
+        }
+
+        color.a = 1f; 
+        renderer.color = color;
+    }
+
+    public void hideNode()
+    {
+        astroNode = true;
+        foreach (GameObject edge in paths)
+        {
+            edge.SetActive(false);
+        }
+        gameObject.SetActive(false);
+    }
+
+    public IEnumerator showNode()
+    {
+        SpriteRenderer renderer = GetComponent<SpriteRenderer>();
+        renderer.color = rootColor;
+        foreach (GameObject edge in paths)
+        {
+            edge.SetActive(true);
+            edge.GetComponent<LineRenderer>().SetColors(new Color32(255, 255, 255, 0), new Color32(255, 255, 255, 0));
+        }
+        gameObject.SetActive(true);
+        float elapsedTime = 0f;
+        while (elapsedTime < 2)
+        {
+            elapsedTime += Time.deltaTime;
+            byte alphaValue = (byte)(255 * elapsedTime / 2);
+            Color currentColor = renderer.color;
+            currentColor.a = alphaValue;
+            renderer.color = currentColor;
+            foreach(GameObject edge in paths)
+            {
+                edge.GetComponent<LineRenderer>().SetColors(new Color32(255, 255, 255, alphaValue), new Color32(255, 255, 255, alphaValue));
+            }
+            yield return null;
+        }
+        GameObject.FindGameObjectWithTag("CAMHOLDER").GetComponent<MovingCam>().addPosition(transform.position);
+        renderer.color = rootColor;
+    }
+
+    public bool returnMeteor()
+    {
+        return meteoring;
     }
 }

@@ -7,7 +7,7 @@ public class MovingCam : MonoBehaviour
 {
     //forcedMoving is true when the player clicks onto a node and the camera is moved towards it
     [SerializeField]
-    private bool forcedMoving, canMove, gameStopped, waitCam, waitZoom;
+    private bool forcedMoving, canMove, gameStopped, waitCam, waitZoom, hasStartSequence, canControl;
 
     private int orientation = 1;
 
@@ -15,6 +15,9 @@ public class MovingCam : MonoBehaviour
     private float Ylimits, maxSize, minSize, moveSpeed, dragSpeed;
 
     public List<Vector3> movePositions;
+
+    [SerializeField]
+    private CanvasGroup blackThing;
 
     [SerializeField]
     private Camera cam;
@@ -29,10 +32,42 @@ public class MovingCam : MonoBehaviour
     {
         player = GameObject.FindGameObjectWithTag("PLAYER").GetComponent<Player>();
         canMove = true;
+        transform.position = new Vector3(0, 3);
         if (player.getTeam() == false)
         {
+            transform.position = new Vector3(0, -3);
             transform.rotation = Quaternion.Euler(new Vector3(0, 0, 180));
             orientation = -1;
+        }
+        if (hasStartSequence)
+        {
+            canControl = false;
+            StartCoroutine(startSequence());
+        }
+    }
+
+    IEnumerator startSequence()
+    {
+        // dramatic effect to make stages feel cool
+        yield return new WaitForSeconds(1);
+        float targetTime = 1, counter = 0;
+        while(counter < targetTime)
+        {
+            counter += Time.deltaTime;
+            blackThing.alpha = 1 - counter / targetTime;
+            yield return null;
+        }
+        blackThing.gameObject.SetActive(false);
+        transform.LeanMove(Vector3.zero, 3);
+        yield return new WaitForSeconds(3);
+        canControl = true;
+        counter = 0;
+        while (counter < targetTime)
+        {
+            counter += Time.deltaTime;
+            // follows a similar logic to exponents to make a gradual zoom
+            Camera.main.orthographicSize += Time.deltaTime * counter * counter * 4;
+            yield return null;
         }
     }
 
@@ -55,7 +90,7 @@ public class MovingCam : MonoBehaviour
     //this forces the camera to gradually move towards the positions within the movePositions queue
     void forcedMove()
     {
-        if (forcedMoving)
+        if (forcedMoving && canControl)
         {
             //by timesing the movement speed by the distance between the object and the target position, it gives it a smoother movement
             transform.position = Vector2.MoveTowards(transform.position, movePositions[0], moveSpeed * (transform.position - movePositions[0]).magnitude * Time.deltaTime);
@@ -106,22 +141,25 @@ public class MovingCam : MonoBehaviour
     //it respons to player inputs to move the camera
     void cameraMove()
     {
-        if (canMove)
+        if (canControl)
         {
-            transform.position += new Vector3(Input.GetAxis("Horizontal") * moveSpeed * Time.deltaTime, Input.GetAxis("Vertical") * moveSpeed * Time.deltaTime) * orientation;
-            // when inputs are detected
-            if (!checkInputs())
+            if (canMove)
             {
-                if (waitCam)
+                transform.position += new Vector3(Input.GetAxis("Horizontal") * moveSpeed * Time.deltaTime, Input.GetAxis("Vertical") * moveSpeed * Time.deltaTime) * orientation;
+                // when inputs are detected
+                if (!checkInputs())
                 {
-                    tutorial.camMovedFunc();
+                    if (waitCam)
+                    {
+                        tutorial.camMovedFunc();
+                    }
+                    interruptMove();
                 }
-                interruptMove();
             }
-        }
-        else if(checkInputs() && !gameStopped)
-        {
-            canMove = true;
+            else if (checkInputs() && !gameStopped)
+            {
+                canMove = true;
+            }
         }
     }
 

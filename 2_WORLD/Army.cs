@@ -7,7 +7,8 @@ using Photon.Pun;
 
 public class Army : MonoBehaviour
 {
-    private bool moving, disappearing, redteam, singlePlayer, transformed, onElectro;
+    [SerializeField]
+    private bool moving, disappearing, redteam, singlePlayer, transformed, stun, astroPhase2, blackHoled;
 
     [SerializeField]
     private int manpower, index = -1, shieldAmount, poisonDamage;
@@ -62,6 +63,11 @@ public class Army : MonoBehaviour
 
             float tempSpeed = speed;
 
+            if (blackHoled && PlayerPrefs.GetInt("DIFFICULTY") >= 2)
+            {
+                tempSpeed *= 1.5f;
+            }
+
             if (currentEdge.returnElectro())
             {
                 if (redteam)
@@ -72,6 +78,10 @@ public class Army : MonoBehaviour
                 {
                     tempSpeed *= 1.5f;
                 }
+            }
+            if (stun)
+            {
+                tempSpeed = 0;
             }
             //move towards the next node
             transform.position = Vector3.MoveTowards(transform.position, next.transform.position, tempSpeed * Time.deltaTime);
@@ -144,6 +154,14 @@ public class Army : MonoBehaviour
                 else
                 {
                     prev = path[index - 1].Item1;
+                }
+                if(astroPhase2 && prev.GetComponent<Node>().returnBlackHole())
+                {
+                    redteam = false;
+                    renderer.sprite = blueSprite;
+                    int blackHolePower = -(10 + (PlayerPrefs.GetInt("DIFFICUTLY") - 1) * 5);
+                    adjustManpower(blackHolePower);
+                    blackHoled = true;
                 }
                 currentEdge = prev.GetComponent<Node>().returnPath(next);
             }
@@ -229,11 +247,12 @@ public class Army : MonoBehaviour
         return manpower;
     }
 
-    public IEnumerator stunCoroutine()
+    public IEnumerator stunCoroutine(int duration)
     {
-        moving = false;
-        yield return new WaitForSeconds(3);
-        moving = true;
+        Debug.Log("STUN");
+        stun = true;
+        yield return new WaitForSeconds(duration);
+        stun = false;
     }
 
     public bool returnStun()
@@ -243,9 +262,10 @@ public class Army : MonoBehaviour
 
 
     [PunRPC]
-    public void assignValues(string startParam, string targetParam, int manpowerParam, bool redParam, string potionArg, bool isSingle)
+    public void assignValues(string startParam, string targetParam, int manpowerParam, bool redParam, string potionArg, bool isSingle, bool phase2)
     {
         //called when created so values can be passed into the object
+        astroPhase2 = phase2;
         start = GameObject.Find(startParam);
         target = GameObject.Find(targetParam);
         manager = GameObject.FindGameObjectWithTag("MANAGER").GetComponent<Manager>();
@@ -309,6 +329,15 @@ public class Army : MonoBehaviour
         Destroy(gameObject);
     }
 
+    public void stunMethod()
+    {
+        if (!redteam)
+        {
+            Debug.Log("blueStun");
+        }
+        StartCoroutine(stunCoroutine(3));
+    }
+
     private void OnTriggerEnter2D(Collider2D collision)
     {
         // check collisions for a single team only (as collisions only occur when opposing teams collide, to ensure the values are correct only have this function called once)
@@ -321,11 +350,11 @@ public class Army : MonoBehaviour
                 adjustManpower(enemyManpower);
                 if (potion == "STUN")
                 {
-                    StartCoroutine(collision.GetComponent<Army>().stunCoroutine());
+                    collision.GetComponent<Army>().stunMethod();
                 }
                 if (collision.GetComponent<Army>().returnStun())
                 {
-                    StartCoroutine(stunCoroutine());
+                    stunMethod();
                 }
             }
         }

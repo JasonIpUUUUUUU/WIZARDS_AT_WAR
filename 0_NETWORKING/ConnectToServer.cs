@@ -10,7 +10,8 @@ using Photon.Pun;
 
 public class ConnectToServer : MonoBehaviourPunCallbacks
 {
-    private bool connectedMaster, connecting, hiding;
+    [SerializeField]
+    private bool connectedMaster, connecting, hiding, tutorial;
 
     [SerializeField]
     private float baseLoadingTime, masterLoadingTime;
@@ -54,12 +55,13 @@ public class ConnectToServer : MonoBehaviourPunCallbacks
         {
             loadingCanvas.gameObject.SetActive(false);
             audio.Play();
-            if (PlayerPrefs.GetInt("TUTORIAL") != 1)
+            if (PlayerPrefs.GetInt("TUTORIAL") != 1 && tutorial)
             {
                 PlayerPrefs.SetInt("SINGLE", 1);
                 SceneManager.LoadScene("TUTORIAL1");
             }
         }
+        print(Time.timeScale);
     }
 
     // this is to make the illusion of a progress bar when connecting to the server so the player feels like something is happening
@@ -82,7 +84,7 @@ public class ConnectToServer : MonoBehaviourPunCallbacks
         progressBar.value = counter / totalLoadingTime;
         if(counter >= totalLoadingTime && !hiding)
         {
-            if (PlayerPrefs.GetInt("TUTORIAL") != 1)
+            if (PlayerPrefs.GetInt("TUTORIAL") != 1 && tutorial)
             {
                 PlayerPrefs.SetInt("SINGLE", 1);
                 SceneManager.LoadScene("TUTORIAL1");

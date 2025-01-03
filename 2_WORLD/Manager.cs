@@ -12,7 +12,7 @@ public class Manager : MonoBehaviourPunCallbacks
     private string stage;
 
     [SerializeField]
-    private int rootStartIndex = 0, winAmount;
+    private int rootStartIndex = 0, astroIndex = -1, winAmount;
 
     [SerializeField]
     private int[] neighbourCount, neigbours, distances;
@@ -164,6 +164,10 @@ public class Manager : MonoBehaviourPunCallbacks
                 edgesList.Add(tempPath);
             }
         }
+        if (astroIndex != -1)
+        {
+            nodes[astroIndex].GetComponent<Node>().hideNode();
+        }
     }
 
     // This function returns a list of tuples with the first variable being the node and the second being the distance to said node, this selects the optimal path via dijkstra's algorithm
@@ -204,6 +208,7 @@ public class Manager : MonoBehaviourPunCallbacks
         }));
 
         queue.Add(start);
+        bool startedSearching = false;
 
         // a while loop to find the optimal path by checking the shortest distance to the next node until the target is reached
         while (queue.Count > 0)
@@ -230,13 +235,12 @@ public class Manager : MonoBehaviourPunCallbacks
                 }
                 return output;
             }
-
             // iterate through each of the neighbours to find the next node
             Node nodeScript = currentNode.GetComponent<Node>();
             for(int i = 0; i < nodeScript.neighbours.Count; i++)
             {
                 // Skip visited nodes and nodes not on the same team (except the target node)
-                if (visited.Contains(nodeScript.neighbours[i]) || (!nodeScript.sameTeam(redTeamParam) && nodeScript.gameObject != target))
+                if ((visited.Contains(nodeScript.neighbours[i]) || !nodeScript.sameTeam(redTeamParam) && nodeScript.gameObject != target && !nodeScript.returnBlackHole()) && currentNode != start)
                 {
                     continue;
                 }
@@ -269,6 +273,7 @@ public class Manager : MonoBehaviourPunCallbacks
         {
             output.Add((path[i], distances[path[i]]));
         }
+        Debug.Log("PATH FOUND");
         return output;
     }
 
@@ -350,6 +355,12 @@ public class Manager : MonoBehaviourPunCallbacks
         }
     }
 
+    public void setAstroBoss()
+    {
+        StartCoroutine(nodes[astroIndex].GetComponent<Node>().showNode());
+        nodes[astroIndex].GetComponent<Node>().changeState("boss");
+    }
+
     public void turnPathGold()
     {
         int randoIndex = Random.Range(0, edgesList.Count);
@@ -364,6 +375,39 @@ public class Manager : MonoBehaviourPunCallbacks
                 randoIndex2 = Random.Range(0, edgesList.Count);
             }
             edgesList[randoIndex2].GetComponent<edges>().turnGold();
+        }
+    }
+
+    public void summonMeteor(bool phase2)
+    {
+        int randoIndex = Random.Range(0, nodes.Count);
+        GameObject meteorNode = nodes[randoIndex];
+        // make sure the node doesn't already have a meteor heading towards it
+        while (meteorNode.GetComponent<Node>().getType() == "root node" || meteorNode.GetComponent<Node>().getType() == "boss" || meteorNode.GetComponent<Node>().returnAstro() || meteorNode.GetComponent<Node>().returnBlackHole())
+        {
+            randoIndex = Random.Range(0, nodes.Count);
+            meteorNode = nodes[randoIndex];
+        }
+        StartCoroutine(meteorNode.GetComponent<Node>().fireMeteor(phase2));
+    }
+
+    public void blackOut(int duration)
+    {
+        GameObject[] armies = GameObject.FindGameObjectsWithTag("ARMY");
+        foreach(GameObject army in armies)
+        {
+            // stun all red armies
+            if (army.GetComponent<Army>().getTeam())
+            {
+                StartCoroutine(army.GetComponent<Army>().stunCoroutine(duration));
+            }
+        }
+        foreach(GameObject nodeP in nodes)
+        {
+            if (nodeP.GetComponent<Node>().sameTeam(true))
+            {
+                StartCoroutine(nodeP.GetComponent<Node>().blackOutCoroutine(duration));
+            }
         }
     }
 

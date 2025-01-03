@@ -66,7 +66,6 @@ public class Player : MonoBehaviour
             current_UI = Instantiate(UI_Prefab, UI_Canvas.transform);
             RectTransform canvasRect = UI_Canvas.GetComponent<RectTransform>();
             float canvasHeight = canvasRect.rect.height;
-            Debug.Log(node);
             RectTransform rect = current_UI.GetComponent<RectTransform>();
             rect.anchoredPosition = new Vector3(0, -canvasHeight * 1.5f);
             current_UI.GetComponent<NodeInfoUI>().instantiateValues(node.GetComponent<Node>(), this, redTeam, potion_UI);
@@ -123,7 +122,7 @@ public class Player : MonoBehaviour
 
     public void reselect(List<GameObject> neighbours)
     {
-        if (sending)
+        if(sending)
         {
             foreach (GameObject neighbour in neighbours)
             {
@@ -282,7 +281,7 @@ public class Player : MonoBehaviour
             }
             else
             {
-                view.RPC("sendArmy", RpcTarget.AllBuffered, selectedNode.name, nodeName, sendManPower, redTeam, isSingle, false, selectedNode.GetComponent<Node>().usePotion());
+                view.RPC("sendArmy", RpcTarget.AllBuffered, selectedNode.name, nodeName, sendManPower, redTeam, isSingle, false, selectedNode.GetComponent<Node>().usePotion(), false, false);
             }
         }
     }
@@ -313,7 +312,7 @@ public class Player : MonoBehaviour
 
 
     [PunRPC]
-    public void sendArmy(string selectedNodeParam, string nodeName, int sendManPowerParam, bool redTeamParam, bool singleParam, bool bossParam, string potionParam)
+    public void sendArmy(string selectedNodeParam, string nodeName, int sendManPowerParam, bool redTeamParam, bool singleParam, bool bossParam, string potionParam, bool isAstro = false, bool phase2 = false)
     {
         // prevents armies from being sent when the player wins
         if (!manager.hasWon())
@@ -327,12 +326,12 @@ public class Player : MonoBehaviour
                 tempSendManPower = nodeActual.GetComponent<Node>().returnManpower();
             }
             sendArmy.transform.position = nodeActual.transform.position;
-            sendArmy.GetComponent<Army>().assignValues(selectedNodeParam, nodeName, tempSendManPower, redTeamParam, potionParam, singleParam);
+            sendArmy.GetComponent<Army>().assignValues(selectedNodeParam, nodeName, tempSendManPower, redTeamParam, potionParam, singleParam, phase2);
             if (!bossParam)
             {
                 if (isSingle)
                 {
-                    selectedNode.GetComponent<Node>().modifyManPower(tempSendManPower, false, redTeam);
+                    selectedNode.GetComponent<Node>().modifyManPower(tempSendManPower, false, redTeam, isAstro);
                     cancelSend();
                 }
                 else if (redTeam == redTeamParam)

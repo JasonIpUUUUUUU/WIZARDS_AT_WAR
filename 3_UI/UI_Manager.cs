@@ -8,8 +8,9 @@ using TMPro;
 public class UI_Manager : MonoBehaviour
 {
     private bool difficultySet = false;
+
     [SerializeField]
-    private GameObject currentScreen;
+    private GameObject currentScreen, blackThing;
 
     [SerializeField]
     private StageSelect stageSelect;
@@ -51,6 +52,8 @@ public class UI_Manager : MonoBehaviour
             yield return null;
         }
         PlayerPrefs.SetInt("SINGLE", 1);
+        blackThing.LeanMoveY(0, 1);
+        yield return new WaitForSeconds(1);
         SceneManager.LoadScene(stage);
     }
 }
