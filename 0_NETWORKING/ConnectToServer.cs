@@ -11,10 +11,16 @@ using Photon.Pun;
 public class ConnectToServer : MonoBehaviourPunCallbacks
 {
     [SerializeField]
-    private bool connectedMaster, connecting, hiding, tutorial;
+    private bool connectedMaster, connecting, hiding, tutorial, requestingUsername;
 
     [SerializeField]
     private float baseLoadingTime, masterLoadingTime;
+
+    [SerializeField]
+    private GameObject usernameScreen;
+
+    [SerializeField]
+    private TMP_InputField usernameInput;
 
     private float counter, totalLoadingTime, acceleration = 0.5f;
 
@@ -60,6 +66,10 @@ public class ConnectToServer : MonoBehaviourPunCallbacks
                 PlayerPrefs.SetInt("SINGLE", 1);
                 SceneManager.LoadScene("TUTORIAL1");
             }
+            else if (!PlayerPrefs.HasKey("USERNAME"))
+            {
+                requestUsername();
+            }
         }
         print(Time.timeScale);
     }
@@ -91,6 +101,10 @@ public class ConnectToServer : MonoBehaviourPunCallbacks
             }
             else
             {
+                if (!PlayerPrefs.HasKey("USERNAME"))
+                {
+                    requestUsername();
+                }
                 audio.Play();
                 StartCoroutine(hideUI());
                 hiding = true;
@@ -128,6 +142,34 @@ public class ConnectToServer : MonoBehaviourPunCallbacks
             yield return null;
         }
         loadingCanvas.gameObject.SetActive(false);
+    }
+
+    public void requestUsername()
+    {
+        usernameScreen.SetActive(true);
+        requestingUsername = true;
+    }
+
+    public void writeUsername()
+    {
+        if (requestingUsername && usernameInput.text.Length > 1)
+        {
+            string inputText = usernameInput.text;
+            bool valid = false;
+            foreach(char c in inputText)
+            {
+                if(c != ' ')
+                {
+                    valid = true;
+                }
+            }
+            if (valid)
+            {
+                PlayerPrefs.SetString("USERNAME", inputText);
+                requestingUsername = false;
+                usernameScreen.SetActive(false);
+            }
+        }
     }
 
     public override void OnConnectedToMaster()

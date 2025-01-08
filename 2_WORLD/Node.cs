@@ -735,6 +735,7 @@ public class Node : MonoBehaviour
     public IEnumerator fireMeteor(bool phase2)
     {
         StartCoroutine(fadeMeteor());
+        meteoring = true;
         yield return new WaitForSeconds(2);
         GameObject b = Instantiate(meteor);
         b.transform.position = new Vector3(100, 100);
@@ -744,6 +745,7 @@ public class Node : MonoBehaviour
         int meteorPower = 10 + (PlayerPrefs.GetInt("DIFFICULTY") - 1) * 5;
         modifyManPower(meteorPower, true, false);
         player.sendArmy(name, returnRandomNeigbour(new List<GameObject>(), false, gameObject).name, meteorPower, false, true, true, "", true, phase2);
+        meteoring = true;
         GameObject effect = Instantiate(meteorEffect);
         effect.transform.position = transform.position;
         redVisual.SetActive(false);

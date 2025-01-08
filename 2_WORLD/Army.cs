@@ -249,7 +249,6 @@ public class Army : MonoBehaviour
 
     public IEnumerator stunCoroutine(int duration)
     {
-        Debug.Log("STUN");
         stun = true;
         yield return new WaitForSeconds(duration);
         stun = false;
@@ -331,10 +330,6 @@ public class Army : MonoBehaviour
 
     public void stunMethod()
     {
-        if (!redteam)
-        {
-            Debug.Log("blueStun");
-        }
         StartCoroutine(stunCoroutine(3));
     }
 

@@ -16,12 +16,16 @@ public class UI_Manager : MonoBehaviour
     private StageSelect stageSelect;
 
     [SerializeField]
-    private TextMeshProUGUI moneyText, stardustText;
+    private TextMeshProUGUI moneyText, stardustText, usernameText;
 
     private void Update()
     {
         moneyText.text = "Money: " + PlayerPrefs.GetInt("MONEY").ToString();
         stardustText.text = "Stardust: " + PlayerPrefs.GetInt("STARDUST").ToString();
+        if (PlayerPrefs.HasKey("USERNAME"))
+        {
+            usernameText.text = "Username: " + PlayerPrefs.GetString("USERNAME");
+        }
     }
 
     public void enterScreen(GameObject screen)

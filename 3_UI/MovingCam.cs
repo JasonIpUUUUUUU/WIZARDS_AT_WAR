@@ -44,6 +44,10 @@ public class MovingCam : MonoBehaviour
             canControl = false;
             StartCoroutine(startSequence());
         }
+        else
+        {
+            canControl = true;
+        }
     }
 
     IEnumerator startSequence()
@@ -60,15 +64,15 @@ public class MovingCam : MonoBehaviour
         blackThing.gameObject.SetActive(false);
         transform.LeanMove(Vector3.zero, 3);
         yield return new WaitForSeconds(3);
-        canControl = true;
         counter = 0;
         while (counter < targetTime)
         {
             counter += Time.deltaTime;
             // follows a similar logic to exponents to make a gradual zoom
-            Camera.main.orthographicSize += Time.deltaTime * counter * counter * 4;
+            Camera.main.orthographicSize += Time.deltaTime * counter * counter * 6;
             yield return null;
         }
+        canControl = true;
     }
 
     // Update is called once per frame
@@ -167,7 +171,7 @@ public class MovingCam : MonoBehaviour
     void cameraScroll()
     {
         float oldOrthographicSize = Camera.main.orthographicSize;
-        if (Input.mouseScrollDelta.y != 0 && !gameStopped)
+        if (Input.mouseScrollDelta.y != 0 && !gameStopped && canControl)
         {
             if (waitZoom)
             {

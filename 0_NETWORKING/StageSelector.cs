@@ -8,6 +8,8 @@ using TMPro;
 
 public class StageSelector : MonoBehaviour
 {
+    private int playerIndex;
+
     [SerializeField]
     private string[] stageNames;
 
@@ -18,7 +20,7 @@ public class StageSelector : MonoBehaviour
     private GameObject blackThing;
 
     [SerializeField]
-    private TextMeshProUGUI mapText;
+    private TextMeshProUGUI mapText, usernameText;
 
     [SerializeField]
     private Image stageImage;
@@ -29,12 +31,15 @@ public class StageSelector : MonoBehaviour
     void Start()
     {
         view = GetComponent<PhotonView>();
+        playerIndex = 2;
         if (view.IsMine)
         {
             int mapIndex = Random.Range(0, stageNames.Length);
             // have 1 of the players choose a map and call the function for both players
             view.RPC("setMap", RpcTarget.AllBuffered, mapIndex);
+            playerIndex = 1;
         }
+        view.RPC("setUsernames", RpcTarget.AllBuffered, PlayerPrefs.GetString("USERNAME"), playerIndex);
     }
 
     // a method to choose a map for all players to enter after waiting for a bit and sets up the UI
@@ -45,6 +50,15 @@ public class StageSelector : MonoBehaviour
         mapText.text = map;
         stageImage.sprite = stageImages[mapIndex];
         StartCoroutine(waitToEnterStage(map));
+    }
+
+    [PunRPC]
+    public void setUsernames(string username, int playerIndexParam)
+    {
+        if(playerIndex != playerIndexParam)
+        {
+            usernameText.text = username + " vs " + PlayerPrefs.GetString("USERNAME");
+        }
     }
 
     IEnumerator waitToEnterStage(string map)
