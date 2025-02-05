@@ -95,11 +95,18 @@ public class Player : MonoBehaviour
         sendManPower = manPower;
         sending = true;
         selectedNode = node;
-        validNodes = selectedNode.GetComponent<Node>().returnAllNeigbours(new List<GameObject>(), redTeam);
-        validNodes.RemoveAll(obj => obj == selectedNode);
-        foreach (GameObject nodeArg in validNodes)
+        if (selectedNode)
         {
-            nodeArg.GetComponent<Node>().showShadow(true);
+            validNodes = selectedNode.GetComponent<Node>().returnAllNeigbours(new List<GameObject>(), redTeam);
+            validNodes.RemoveAll(obj => obj == selectedNode);
+            foreach (GameObject nodeArg in validNodes)
+            {
+                nodeArg.GetComponent<Node>().showShadow(true);
+            }
+        }
+        else
+        {
+            Debug.Log("PISSBABY ERROR");
         }
         StartCoroutine(hideUI());
     }

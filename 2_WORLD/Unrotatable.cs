@@ -8,9 +8,12 @@ public class Unrotatable : MonoBehaviour
     void Start()
     {
         Player player = GameObject.FindGameObjectWithTag("PLAYER").GetComponent<Player>();
-        if (player.getTeam() == false)
+        if (player)
         {
-            transform.rotation = Quaternion.Euler(new Vector3(0, 0, 180));
+            if (player.getTeam() == false)
+            {
+                transform.rotation = Quaternion.Euler(new Vector3(0, 0, 180));
+            }
         }
     }
 }

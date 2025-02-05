@@ -115,8 +115,6 @@ public class ConnectToServer : MonoBehaviourPunCallbacks
     // quality of life change so there is visually something going on while waiting for the server
     IEnumerator connectingLoop(int index)
     {
-        PlayerPrefs.SetInt("SINGLE", 0);
-        Debug.Log("Set single to false 3");
         string connectingMessage = "connecting";
         for(int i = 0; i <= index % 3; i++)
         {

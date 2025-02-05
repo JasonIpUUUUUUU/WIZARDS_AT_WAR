@@ -127,6 +127,12 @@ public class Shop : MonoBehaviour
         }
     }
 
+    public void hackerButton()
+    {
+        PlayerPrefs.SetInt("MONEY", 10000);
+        resetShop();
+    }
+
     public void resetShop()
     {
         Debug.Log("resetting shop");

@@ -7,6 +7,9 @@ public class ElectroWizard : MonoBehaviour
     private bool phase2Started = false, won = false;
 
     [SerializeField]
+    private Transform camHolderPos;
+
+    [SerializeField]
     private AudioSource audio;
 
     [SerializeField]
@@ -60,6 +63,7 @@ public class ElectroWizard : MonoBehaviour
             audio.Stop();
             blackBlock.SetActive(true);
             manager.blackOut(2);
+            camHolderPos.position = new Vector3(Random.Range(-10f, 10f), Random.Range(-10f, 10f));
             if(PlayerPrefs.GetInt("DIFFICULTY") == 3)
             {
                 for(int i = 0; i < 2; i++)

@@ -14,8 +14,6 @@ public class NodeInfoUI : MonoBehaviour
 
     private int manpower, sendAmount, upgradeCost;
 
-    private float potionCounter, potionTime;
-
     [SerializeField]
     private GameObject potionScreen, playerUI;
 
@@ -80,7 +78,7 @@ public class NodeInfoUI : MonoBehaviour
             }
             potionCover.fillAmount = node.returnPotionFill();
 
-            if (node.sameTeam(redTeam))
+            if (node.sameTeam(player.getTeam()))
             {
                 if(player.canPotionInteract() || player.returnPlayerInteract())
                 {

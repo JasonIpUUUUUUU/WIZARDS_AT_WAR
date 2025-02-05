@@ -12,7 +12,7 @@ public class Manager : MonoBehaviourPunCallbacks
     private string stage;
 
     [SerializeField]
-    private int rootStartIndex = 0, astroIndex = -1, winAmount;
+    private int rootStartIndex = 0, astroIndex = -1, winAmount, playerIndex;
 
     [SerializeField]
     private int[] neighbourCount, neigbours, distances;
